@@ -1,15 +1,13 @@
 class StateMachine:
 
-    def __init__(self, number_of_nodes):
-        self.States = []
-        self.Number_of_nodes = number_of_nodes
-        self.States = [State(count) for count in range(0,number_of_nodes)]
+    def __init__(self, number_of_nodes, alphabet, number_of_accepting=1):
 
-        self.States[1].add_transition(self.States[2], '0')
-        self.States[1].add_transition(self.States[4], '0')
-        self.States[3].add_transition(self.States[2], '0')
-        self.States[5].add_transition(self.States[2], '0')
-        self.States[2].add_transition(self.States[2], '0')
+        self.Number_of_nodes = number_of_nodes
+
+        self.alphabet = Alphabet(alphabet)
+
+        self.States = []
+        self.States = [State(count) for count in range(0,number_of_nodes)]
 
     def print_states(self):
         print self.States
@@ -17,16 +15,20 @@ class StateMachine:
 
 class State:
 
-    def __init__(self, _id, accepting=False):
+    def __init__(self, _id, accepting=False, is_start=False):
         self._id = _id
         self.Transitions = []
-        self.isAccepting = accepting
+        self.is_accepting = accepting
+        self.is_start = is_start
 
     def add_transition(self, state, symbol):
         self.Transitions.append(Transition(self, state, symbol))
 
     def print_transitions(self):
         print self.Transitions
+
+    def set_accept(self, accepting):
+        self.is_accepting = accepting
 
     def __str__(self):
         return str(self._id)
