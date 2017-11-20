@@ -55,6 +55,7 @@ class State(object):
     def __repr__(self):
         return str(self._id)
 
+    # TODO: Might need to be changed to check for a logical equivalence rather than an instance equivalence
     def __eq__(self, other):
         return self._id == other._id
 
