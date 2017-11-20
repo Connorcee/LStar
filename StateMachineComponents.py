@@ -12,6 +12,10 @@ class StateMachine:
     def print_states(self):
         print self.States
 
+    def get_states(self):
+        return self.States
+
+
 
 class State:
 
@@ -20,21 +24,23 @@ class State:
         self.Transitions = []
         self.is_accepting = accepting
         self.is_start = is_start
+        self.degree = len(self.Transitions)
 
     def add_transition(self, state, symbol):
         self.Transitions.append(Transition(self, state, symbol))
+        self.degree = len(self.Transitions)
 
     def print_transitions(self):
         print self.Transitions
-
-    def set_accept(self, accepting):
-        self.is_accepting = accepting
 
     def __str__(self):
         return str(self._id)
 
     def __repr__(self):
         return str(self._id)
+
+    def __eq__(self, other):
+        return self._id == other._id
 
 
 class Transition:
@@ -59,14 +65,21 @@ class Transition:
                ' End State:' + str(self.state_2) + \
                ' Transition Symbol:' + str(self.symbol) + ')'
 
+    def __eq__(self, other):
+        return (self.state_1 == other.state_2) and (self.symbol == other.symbol)
+
 
 class Alphabet:
 
     def __init__(self, symbols):
         self.symbols = symbols
 
+class MachineGenerator:
 
-def main(number_of_states):
-    FSM = StateMachine(number_of_states)
-    FSM.print_states()
-    FSM.States[1].print_transitions()
+    def __init__(self, number_of_nodes,StateMachine):
+        self.StateMachine = StateMachine
+
+    # TODO: Finish this function to return a Statemachine with a random
+    def random_walk(self):
+        unwalked = self.StateMachine.get_states()
+        walked = []
