@@ -16,8 +16,6 @@ if __name__ == '__main__':
     FSM.random_acceptors(accepting)
 
     FSM.print_states()
-    # print FSM.alphabet.symbols
-
     FSM.random_walk()
     FSM.print_machine_transitions()
     FSM.print_states()

@@ -1,13 +1,13 @@
 from random import *
 
-class StateMachine(object):
 
+class StateMachine(object):
     def __init__(self, number_of_nodes, alphabet, number_of_accepting=1):
 
         self.Number_of_nodes = number_of_nodes
         self.alphabet = Alphabet(alphabet)
         self.States = []
-        self.States = [State(count) for count in range(0,number_of_nodes)]
+        self.States = [State(count) for count in range(0, number_of_nodes)]
         self.Walked = False
 
     def print_states(self):
@@ -25,34 +25,35 @@ class StateMachine(object):
                 item.add_transition(next_state, random_symbol)
 
     def print_machine_transitions(self):
+        print "Transitions:"
         for state in self.States:
             state.print_transitions()
 
     def random_acceptors(self, number_of_acceptors):
         if number_of_acceptors < len(self.States):
-            temp = sample(self.States,number_of_acceptors)
+            temp = sample(self.States, number_of_acceptors)
             # Assign all the states in temp to accepting states
-            [setattr(x,'is_accepting',True) for x in temp]
-            print temp
+            [setattr(x, 'is_accepting', True) for x in temp]
+            print "Acceptors: " + str(temp)
 
     # If there are no starting states, add a random one
     # Doesn't account for if all states can be reached from this state
     def random_starting(self):
-        number_of_starts = len([s for s in self.States if s.is_accepting == True])
+        number_of_starts = len([s for s in self.States if s.is_accepting])
         if number_of_starts < 1:
             [setattr(x, 'is_starting', True) for x in self.States]
 
-    # TODO: Methods to be implemented
-    # def randomising_pass(self):
+            # TODO: Methods to be implemented
+            # def randomising_pass(self):
 
-    # def process_string(self,string):
+            # def process_string(self,string):
 
-    # def process_transition(self,state, symbol):
+            # def process_transition(self,state, symbol):
 
-    # def make_complete(self):
+            # def make_complete(self):
+
 
 class State(object):
-
     def __init__(self, _id, accepting=False, is_start=False):
         self._id = _id
         self.Transitions = []
@@ -109,6 +110,5 @@ class Transition(object):
 
 
 class Alphabet(object):
-
     def __init__(self, symbols):
         self.symbols = list(set(symbols))
