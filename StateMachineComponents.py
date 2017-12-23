@@ -1,11 +1,12 @@
 from random import *
 
 
-class StateMachine(object):
-    def __init__(self, number_of_nodes, alphabet, number_of_accepting=1):
+class MealyMachine(object):
+    def __init__(self, number_of_nodes, alphabet, outputs, number_of_accepting=1):
 
         self.Number_of_nodes = number_of_nodes
         self.alphabet = Alphabet(alphabet)
+        self.outputs = Outputs(outputs)
         self.States = []
         self.States = [State(count) for count in range(0, number_of_nodes)]
         self.Walked = False
@@ -21,8 +22,9 @@ class StateMachine(object):
             for index, item in enumerate(self.States[:-1]):
                 # Get the position of a random symbol
                 random_symbol = choice(self.alphabet.symbols)
+                random_output = choice(self.outputs.outputs)
                 next_state = self.States[index + 1]
-                item.add_transition(next_state, random_symbol)
+                item.add_transition(next_state, random_symbol, random_output)
 
     def print_machine_transitions(self):
         print "Transitions:"
@@ -43,14 +45,20 @@ class StateMachine(object):
         if number_of_starts < 1:
             [setattr(x, 'is_starting', True) for x in self.States]
 
-            # TODO: Methods to be implemented
-            # def randomising_pass(self):
+    # TODO: Methods to be implemented
+    def transition_legal(self, State, symbol):
+        if State in self.States:
+            return any(x.symbol == symbol for x in State.Transitions)
 
-            # def process_string(self,string):
+    def transition_output(self, State, symbol):
+        if self.transition_legal(State, symbol):
+            return State.get_transition(symbol).output
+        else:
+            return "No Transition from this state: " + str(State) + " " + str(symbol)
 
-            # def process_transition(self,state, symbol):
-
-            # def make_complete(self):
+    # def process_string(self,string):
+    # def process_transition(self,state, symbol):
+    # def make_complete(self):
 
 
 class State(object):
@@ -62,21 +70,26 @@ class State(object):
         self.degree = len(self.Transitions)
         self.is_starting = False
 
-    def add_transition(self, state, symbol):
-        self.Transitions.append(Transition(self, state, symbol))
+    def add_transition(self, state, symbol, output):
+        self.Transitions.append(Transition(self, state, symbol, output))
         self.degree = len(self.Transitions)
 
     def print_transitions(self):
         print self.Transitions
 
+    def get_transition(self, symbol):
+        # Get the transition for the above symbol
+        transition = next(t for t in self.Transitions if t.symbol == symbol)
+        return transition
+
     def __getitem__(self, item):
         return self
 
     def __str__(self):
-        return str(self._id)
+        return "( ID:" + str(self._id) + " " + str(self.is_accepting) + " )"
 
     def __repr__(self):
-        return "( " + str(self._id) + " " + str(self.is_accepting) + " )"
+        return "( ID:" + str(self._id) + " " + str(self.is_accepting) + " )"
 
     # TODO: Might need to be changed to check for a logical equivalence rather than an instance equivalence
     def __eq__(self, other):
@@ -86,29 +99,37 @@ class State(object):
 class Transition(object):
     _ID = 0
 
-    def __init__(self, state_1, state_2, symbol):
+    def __init__(self, state_1, state_2, symbol, output):
         self._id = self.__class__._ID
         self.__class__._ID += 1
         self.state_1 = state_1
         self.state_2 = state_2
         self.symbol = symbol
+        self.output = output
 
     def __str__(self):
         return '(ID: ' + str(self._id) + \
                ' This State:' + str(self.state_1) + \
                ' End State:' + str(self.state_2) + \
-               ' Transition Symbol:' + str(self.symbol) + ')'
+               ' Transition Symbol:' + str(self.symbol) +\
+               ' Outputs' + str(self.output) + ')'
 
     def __repr__(self):
         return '(ID: ' + str(self._id) + \
                ' This State:' + str(self.state_1) + \
                ' End State:' + str(self.state_2) + \
-               ' Transition Symbol:' + str(self.symbol) + ')'
+               ' Transition Symbol:' + str(self.symbol) +\
+               ' Output:' + str(self.output) + ')'
 
     def __eq__(self, other):
         return (self.state_1 == other.state_2) and (self.symbol == other.symbol)
 
-
+# Alphabet of the Mealy machine
 class Alphabet(object):
     def __init__(self, symbols):
         self.symbols = list(set(symbols))
+
+# Mealy Machines have outputs on transitions
+class Outputs(object):
+    def __init__(self, outputs):
+        self.outputs = list(set(outputs))
