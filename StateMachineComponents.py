@@ -8,12 +8,14 @@ class MealyMachine(object):
         self.alphabet = Alphabet(alphabet)
         self.outputs = Outputs(outputs)
         self.States = []
+        self.StartingState = None
         self.States = [State(count) for count in range(0, number_of_nodes)]
         self.Walked = False
 
     def print_states(self):
         print "States: " + str(self.States)
 
+    # This also defines a starting state of 1
     def random_walk(self):
         if not self.Walked:
             # Only allow one random walk, doesn't check for duplicate symbol transitions
@@ -21,6 +23,9 @@ class MealyMachine(object):
             shuffle(self.States)
             for index, item in enumerate(self.States[:-1]):
                 # Get the position of a random symbol
+                if index == 0:
+                    item.is_start = True
+                    self.StartingState = item
                 random_symbol = choice(self.alphabet.symbols)
                 random_output = choice(self.outputs.outputs)
                 next_state = self.States[index + 1]
@@ -45,16 +50,25 @@ class MealyMachine(object):
         if number_of_starts < 1:
             [setattr(x, 'is_starting', True) for x in self.States]
 
-    # TODO: Methods to be implemented
-    def transition_legal(self, State, symbol):
-        if State in self.States:
-            return any(x.symbol == symbol for x in State.Transitions)
+    def transition_legal(self, state, symbol):
+        if state in self.States:
+            return any(x.symbol == symbol for x in state.Transitions)
+
+    def next_state(self, state, symbol):
+        if self.transition_legal(state, symbol):
+            return state.get_transition(symbol)
 
     def transition_output(self, State, symbol):
         if self.transition_legal(State, symbol):
             return State.get_transition(symbol).output
         else:
             return "No Transition from this state: " + str(State) + " " + str(symbol)
+
+    def is_accepted(self, word):
+        starting_state = [x for x in self.States if x.is_start == True][0]
+        current_state = starting_state
+        for symbols in word:
+            self.transition_legal(current_state,symbols)
 
     # def process_string(self,string):
     # def process_transition(self,state, symbol):
@@ -109,14 +123,14 @@ class Transition(object):
 
     def __str__(self):
         return '(ID: ' + str(self._id) + \
-               ' This State:' + str(self.state_1) + \
+               ' Start State:' + str(self.state_1) + \
                ' End State:' + str(self.state_2) + \
                ' Transition Symbol:' + str(self.symbol) +\
                ' Outputs' + str(self.output) + ')'
 
     def __repr__(self):
         return '(ID: ' + str(self._id) + \
-               ' This State:' + str(self.state_1) + \
+               ' Start State:' + str(self.state_1) + \
                ' End State:' + str(self.state_2) + \
                ' Transition Symbol:' + str(self.symbol) +\
                ' Output:' + str(self.output) + ')'

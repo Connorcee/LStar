@@ -7,7 +7,7 @@ if __name__ == '__main__':
     # Number of accepting states
     accepting = 3
     # Symbols for the alphabet
-    symbols = [0, 1, 2, 3]
+    symbols = [1, 2, 3]
     # Outputs attached to each transition
     outputs = [0,1]
     # Create the alphabet object to pass to the state machine
@@ -23,6 +23,9 @@ if __name__ == '__main__':
     print 'Generation Complete'
     print '------------------------------------------'
     print Mealy.transition_legal(Mealy.States[0], 1)
+    #print Mealy.States[0].print_transitions()
+    if Mealy.transition_legal(Mealy.States[0], 1):
+        print Mealy.next_state(Mealy.States[0],1)
     print Mealy.transition_legal(Mealy.States[0], 2)
     print Mealy.transition_legal(Mealy.States[0], 3)
-    print Mealy.transition_legal(Mealy.States[0], 0)
+    print Mealy.transition_legal(Mealy.States[0], 4)
