@@ -15,7 +15,7 @@ class MealyMachine(object):
     def print_states(self):
         print "States: " + str(self.States)
 
-    # This also defines a starting state of 1
+    # Creates a random walk, makes initial state start and final state an acceptor
     def random_walk(self):
         if not self.Walked:
             # Only allow one random walk, doesn't check for duplicate symbol transitions
@@ -30,9 +30,11 @@ class MealyMachine(object):
                 random_output = choice(self.outputs.outputs)
                 next_state = self.States[index + 1]
                 item.add_transition(next_state, random_symbol, random_output)
+                if index == len(self.States) - 2:
+                    print "Adding Acceptor"
+                    next_state.is_accepting = True
 
     def print_machine_transitions(self):
-        print "Transitions:"
         for state in self.States:
             state.print_transitions()
 
@@ -43,12 +45,8 @@ class MealyMachine(object):
             [setattr(x, 'is_accepting', True) for x in temp]
             print "Acceptors: " + str(temp)
 
-    # If there are no starting states, add a random one
-    # Doesn't account for if all states can be reached from this state
-    def random_starting(self):
-        number_of_starts = len([s for s in self.States if s.is_accepting])
-        if number_of_starts < 1:
-            [setattr(x, 'is_starting', True) for x in self.States]
+    def ending_acceptor(self):
+        self.States[len(self.States) - 1].is_accepting = True
 
     def transition_legal(self, state, symbol):
         if state in self.States:
@@ -56,7 +54,7 @@ class MealyMachine(object):
 
     def next_state(self, state, symbol):
         if self.transition_legal(state, symbol):
-            return state.get_transition(symbol)
+            return state.get_transition(symbol).get_end_state()
 
     def transition_output(self, State, symbol):
         if self.transition_legal(State, symbol):
@@ -65,14 +63,8 @@ class MealyMachine(object):
             return "No Transition from this state: " + str(State) + " " + str(symbol)
 
     def is_accepted(self, word):
-        starting_state = [x for x in self.States if x.is_start == True][0]
-        current_state = starting_state
-        for symbols in word:
-            self.transition_legal(current_state,symbols)
-
-    # def process_string(self,string):
-    # def process_transition(self,state, symbol):
-    # def make_complete(self):
+        starting_state = [x for x in self.States if x.is_start is True][0]
+        print "Start State:" + str(starting_state)
 
 
 class State(object):
@@ -82,14 +74,13 @@ class State(object):
         self.is_accepting = accepting
         self.is_start = is_start
         self.degree = len(self.Transitions)
-        self.is_starting = False
 
     def add_transition(self, state, symbol, output):
         self.Transitions.append(Transition(self, state, symbol, output))
         self.degree = len(self.Transitions)
 
     def print_transitions(self):
-        print self.Transitions
+        print "Transitions: " + str(self.Transitions)
 
     def get_transition(self, symbol):
         # Get the transition for the above symbol
@@ -100,10 +91,10 @@ class State(object):
         return self
 
     def __str__(self):
-        return "( ID:" + str(self._id) + " " + str(self.is_accepting) + " )"
+        return "( ID:" + str(self._id) + " Acceptor:" + str(self.is_accepting) + " Start:" + str(self.is_start) + ")"
 
     def __repr__(self):
-        return "( ID:" + str(self._id) + " " + str(self.is_accepting) + " )"
+        return "( ID:" + str(self._id) + " Acceptor:" + str(self.is_accepting) + " Start:" + str(self.is_start) + ")"
 
     # TODO: Might need to be changed to check for a logical equivalence rather than an instance equivalence
     def __eq__(self, other):
@@ -137,6 +128,12 @@ class Transition(object):
 
     def __eq__(self, other):
         return (self.state_1 == other.state_2) and (self.symbol == other.symbol)
+
+    def get_start_state(self):
+        return self.state_1
+
+    def get_end_state(self):
+        return self.state_2
 
 # Alphabet of the Mealy machine
 class Alphabet(object):
