@@ -1,12 +1,12 @@
 from StateMachineComponents import *
 
 if __name__ == '__main__':
-    logging = True
+    logging = False
     print 'Generating Machine'
     print '------------------------------------------'
 
     # Create the machine
-    states = 400
+    states = 100000
     accepting = 1
     symbols = [1,2,3,4,5,6,7,8,9]
     outputs = [0,1]
@@ -25,4 +25,3 @@ if __name__ == '__main__':
     print 'Generation Complete'
     print '------------------------------------------'
     Mealy.is_accepted(test_word,logging)
-    Mealy.create_random_legal_transition()

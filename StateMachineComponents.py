@@ -10,11 +10,22 @@ class MealyMachine(object):
         self.starting_state = None
         self.Walked = False
         self.states = [State(count) for count in range(0, number_of_nodes)]
+        self.transitionsListOrdered = True
+        self.statesDict = self.buildStateDictionary()
         if randomise:
             self.random_walk()
 
     def print_states(self):
         print "States: " + str(self.states)
+
+    def buildStateDictionary(self):
+        x = {}
+        for states in self.states:
+            x[states.id] = states
+        return x
+
+    def make_acceptor(self,stateid):
+        self.statesDict[stateid].is_accepting = True
 
     # Creates a random walk, makes initial state start and final state an acceptor
     def random_walk(self):
@@ -37,14 +48,13 @@ class MealyMachine(object):
 
     # Not completely pythonic because states should be a dictionary
     def create_random_legal_transition(self):
+        self.transitionsListOrdered = False
         legal_states = [x for x in self.states if x.degree < len(self.alphabet)]
         state = choice(legal_states)
         state = self.states[self.states.index(state)]
         transition_state = choice([x for x in self.states if x.id != state.id])
         legal_symbols = [x for x in self.alphabet.symbols if x not in state.get_transition_symbols()]
-        print "Legal Symbols " + str(legal_symbols)
         state.add_transition(transition_state,choice(legal_symbols),choice(self.outputs.outputs))
-        state.print_transitions()
 
     def print_machine_transitions(self):
         for state in self.states:
@@ -58,7 +68,8 @@ class MealyMachine(object):
             print "Acceptors: " + str(temp)
 
     def ending_acceptor(self):
-        self.states[len(self.states) - 1].is_accepting = True
+        if self.transitionsListOrdered:
+            self.states[len(self.states) - 1].is_accepting = True
 
     def transition_legal(self, state, symbol):
         if state in self.states:
