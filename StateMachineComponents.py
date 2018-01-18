@@ -2,7 +2,7 @@ from random import *
 
 
 class MealyMachine(object):
-    def __init__(self, number_of_nodes, alphabet, outputs, number_of_accepting=1, randomise = False):
+    def __init__(self, number_of_nodes, alphabet, outputs, randomise=False):
 
         self.number_of_nodes = number_of_nodes
         self.alphabet = Alphabet(alphabet)
@@ -13,6 +13,7 @@ class MealyMachine(object):
         self.transitionsListOrdered = True
         self.statesDict = self.build_state_dictionary()
         self.randomise = randomise
+
         if randomise:
             self.random_walk()
         else:
@@ -31,7 +32,7 @@ class MealyMachine(object):
             for x in range(int(number_of_transitions)):
                 transfer_state = raw_input("State ID to transfer to: \n")
                 transfer_state = self.statesDict[int(transfer_state)]
-                symbol =  raw_input("Symbol for this transition: \n")
+                symbol = raw_input("Symbol for this transition: \n")
                 symbol = int(symbol)
                 output = raw_input("Input the output for this transition: \n")
                 output = int(output)
@@ -43,7 +44,6 @@ class MealyMachine(object):
             _id = raw_input("ID of state to be an acceptor")
             s = self.statesDict[int(_id)]
             s.is_accepting = True
-            print s
 
         # TODO: Check that this is legal
         start = raw_input("ID of state state")
@@ -57,9 +57,6 @@ class MealyMachine(object):
         for states in self.states:
             x[states.id] = states
         return x
-
-    def make_acceptor(self,stateid):
-        self.statesDict[stateid].is_accepting = True
 
     # Creates a random walk, makes initial state start and final state an acceptor
     def random_walk(self):
@@ -80,15 +77,38 @@ class MealyMachine(object):
                     print "Adding Acceptor"
                     next_state.is_accepting = True
 
+
     # Not completely pythonic because states should be a dictionary
-    def create_random_legal_transition(self):
+    def create_random_legal_transition(self, verb=False):
+        if verb:
+            print "Generating Random Transition"
         self.transitionsListOrdered = False
+        # Legal states are those with less transitions than the length of the alphabet
         legal_states = [x for x in self.states if x.degree < len(self.alphabet)]
-        state = choice(legal_states)
-        state = self.states[self.states.index(state)]
-        transition_state = choice([x for x in self.states if x.id != state.id])
+        if len(legal_states) == 1:
+            state = legal_states[0]
+            transition_state = legal_states[0]
+        elif len(legal_states) == 0:
+            return False
+        else:
+            choices = sample(legal_states,2)
+            state = choices[0]
+            transition_state = choices[1]
         legal_symbols = [x for x in self.alphabet.symbols if x not in state.get_transition_symbols()]
         state.add_transition(transition_state,choice(legal_symbols),choice(self.outputs.outputs))
+        return True
+
+    def random_transition_pass(self):
+        for x in self.states:
+            self.create_random_legal_transition(False)
+
+    def build_loopbacks(self):
+        print "Building Loopbacks"
+        for state in self.states:
+            while state.degree < len(self.alphabet):
+                current_symbols = state.get_transition_symbols()
+                legal_symbols = list(set(self.alphabet.symbols) - set(current_symbols))
+                state.add_transition(state,choice(legal_symbols),choice(self.outputs.outputs))
 
     def print_machine_transitions(self):
         for state in self.states:
@@ -106,10 +126,14 @@ class MealyMachine(object):
             self.states[len(self.states) - 1].is_accepting = True
 
     def transition_legal(self, state, symbol):
+        if symbol == "lambda":
+            return True
         if state in self.states:
             return any(x.symbol == symbol for x in state.Transitions)
 
     def next_state(self, state, symbol):
+        if symbol == "lambda":
+            return state
         if self.transition_legal(state, symbol):
             return state.get_transition(symbol).get_end_state()
 
@@ -120,8 +144,11 @@ class MealyMachine(object):
             return "No Transition from this state: " + str(State) + " " + str(symbol)
 
     def is_accepted(self, word, logging=False):
+        # DFA Only has 1 starting state
         starting_state = [x for x in self.states if x.is_start is True][0]
         current_state = starting_state
+        if word == "lambda":
+            return True
         for symbols in word:
             if self.transition_legal(current_state,symbols):
                 if logging: print str(symbols) + " " + "Is legal character, moving state"
@@ -130,6 +157,20 @@ class MealyMachine(object):
                 if logging: print "No legal transition from " + str(current_state) + " for the symbol " + str(symbols)
                 return False
         return True
+
+    def word_output(self, word):
+        starting_state = [x for x in self.states if x.is_start is True][0]
+        current_state = starting_state
+        output_list = []
+        if word == "lambda":
+            return True
+        for symbols in word:
+            output = current_state.get_transition(symbols)
+            output = output.output
+            output_list.append(output)
+            current_state = self.next_state(current_state,symbols)
+        return output_list
+
 
 class State(object):
     def __init__(self, id, accepting=False, is_start=False):
@@ -190,11 +231,10 @@ class Transition(object):
                ' Outputs' + str(self.output) + ')'
 
     def __repr__(self):
-        return '(ID: ' + str(self._id) + \
-               ' Start State:' + str(self.state_1) + \
-               ' End State:' + str(self.state_2) + \
-               ' Transition Symbol:' + str(self.symbol) +\
-               ' Output:' + str(self.output) + ')'
+            return ' Start State:' + str(self.state_1) + \
+                   ' End State:' + str(self.state_2) + \
+                   ' Transition Symbol:' + str(self.symbol) +\
+                   ' Output:' + str(self.output) + ')'
 
     def __eq__(self, other):
         return (self.state_1 == other.state_2) and (self.symbol == other.symbol)
