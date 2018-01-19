@@ -3,11 +3,11 @@ from LStar import ObservationTable
 
 if __name__ == '__main__':
 
-    logging = False
+    logging = True
     # Create the machine
     states = 4
     symbols = [1, 2, 3]
-    outputs = [0, 1, 2]
+    outputs = [0, 1, 2, 3]
     randomise = True
     test_word = [1, 2, 1]
     alphabet = Alphabet(symbols)
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     print 'Generation Complete'
     print '------------------------------------------'
-
-    Mealy.random_transition_pass()
     Mealy.build_loopbacks()
-    Mealy.print_machine_transitions()
+
+    ot.perform_queries(Mealy)
+

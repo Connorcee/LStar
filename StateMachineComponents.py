@@ -73,14 +73,10 @@ class MealyMachine(object):
                 random_output = choice(self.outputs.outputs)
                 next_state = self.states[index + 1]
                 item.add_transition(next_state, random_symbol, random_output)
-                if index == len(self.states) - 2:
-                    print "Adding Acceptor"
-                    next_state.is_accepting = True
-
 
     # Not completely pythonic because states should be a dictionary
-    def create_random_legal_transition(self, verb=False):
-        if verb:
+    def create_random_legal_transition(self, verbose=False):
+        if verbose:
             print "Generating Random Transition"
         self.transitionsListOrdered = False
         # Legal states are those with less transitions than the length of the alphabet
@@ -95,7 +91,10 @@ class MealyMachine(object):
             state = choices[0]
             transition_state = choices[1]
         legal_symbols = [x for x in self.alphabet.symbols if x not in state.get_transition_symbols()]
-        state.add_transition(transition_state,choice(legal_symbols),choice(self.outputs.outputs))
+        legal_outputs = [x for x in self.outputs.outputs if x not in state.get_transition_outputs()]
+        if len(legal_outputs) == 0 or len(legal_symbols) == 0:
+            return False
+        state.add_transition(transition_state,choice(legal_symbols),choice(legal_outputs))
         return True
 
     def random_transition_pass(self):
@@ -126,14 +125,10 @@ class MealyMachine(object):
             self.states[len(self.states) - 1].is_accepting = True
 
     def transition_legal(self, state, symbol):
-        if symbol == "lambda":
-            return True
         if state in self.states:
             return any(x.symbol == symbol for x in state.Transitions)
 
     def next_state(self, state, symbol):
-        if symbol == "lambda":
-            return state
         if self.transition_legal(state, symbol):
             return state.get_transition(symbol).get_end_state()
 
@@ -143,6 +138,7 @@ class MealyMachine(object):
         else:
             return "No Transition from this state: " + str(State) + " " + str(symbol)
 
+    '''
     def is_accepted(self, word, logging=False):
         # DFA Only has 1 starting state
         starting_state = [x for x in self.states if x.is_start is True][0]
@@ -157,13 +153,16 @@ class MealyMachine(object):
                 if logging: print "No legal transition from " + str(current_state) + " for the symbol " + str(symbols)
                 return False
         return True
+    '''
 
     def word_output(self, word):
+        if type(word) is not list:
+            word = [word]
         starting_state = [x for x in self.states if x.is_start is True][0]
         current_state = starting_state
         output_list = []
-        if word == "lambda":
-            return True
+        if len(word) == 0:
+            return current_state.get_transition(word)
         for symbols in word:
             output = current_state.get_transition(symbols)
             output = output.output
@@ -185,11 +184,13 @@ class State(object):
         self.degree = len(self.Transitions)
 
     def print_transitions(self):
-        print "Transitions: " + str(self.Transitions)
+        print "Transitions for State:" + str(self.id) + " " + str(self.Transitions)
 
     def get_transition(self, symbol):
         # Get the transition for the above symbol
-        transition = next(t for t in self.Transitions if t.symbol == symbol)
+        transition = next((t for t in self.Transitions if t.symbol == symbol),None)
+        if transition is None:
+            print "NO TRANSITION FOUND FOR STATE:" + str(self.id) + " " + "AND SYMBOL " + str(symbol)
         return transition
 
     def get_transition_symbols(self):
@@ -197,6 +198,12 @@ class State(object):
         for x in self.Transitions:
             symbols.append(x.symbol)
         return symbols
+
+    def get_transition_outputs(self):
+        outputs = []
+        for x in self.Transitions:
+            outputs.append(x.output)
+        return outputs
 
     def __getitem__(self, item):
         return self
@@ -231,7 +238,7 @@ class Transition(object):
                ' Outputs' + str(self.output) + ')'
 
     def __repr__(self):
-            return ' Start State:' + str(self.state_1) + \
+            return ' \n Start State:' + str(self.state_1) + \
                    ' End State:' + str(self.state_2) + \
                    ' Transition Symbol:' + str(self.symbol) +\
                    ' Output:' + str(self.output) + ')'
