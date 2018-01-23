@@ -13,6 +13,7 @@ class MealyMachine(object):
         self.transitionsListOrdered = True
         self.statesDict = self.build_state_dictionary()
         self.randomise = randomise
+        self.empty = []
 
         if randomise:
             self.random_walk()
@@ -104,10 +105,14 @@ class MealyMachine(object):
     def build_loopbacks(self):
         print "Building Loopbacks"
         for state in self.states:
+            legal_outputs = list(set(self.outputs.outputs) - set(state.get_transition_outputs()))
+            if len(legal_outputs) == 0:
+                continue
+            legal_outputs = choice(legal_outputs)
             while state.degree < len(self.alphabet):
                 current_symbols = state.get_transition_symbols()
                 legal_symbols = list(set(self.alphabet.symbols) - set(current_symbols))
-                state.add_transition(state,choice(legal_symbols),choice(self.outputs.outputs))
+                state.add_transition(state,choice(legal_symbols),legal_outputs,True)
 
     def print_machine_transitions(self):
         for state in self.states:
@@ -129,47 +134,43 @@ class MealyMachine(object):
             return any(x.symbol == symbol for x in state.Transitions)
 
     def next_state(self, state, symbol):
+        if symbol == self.empty:
+            return state
         if self.transition_legal(state, symbol):
             return state.get_transition(symbol).get_end_state()
 
-    def transition_output(self, State, symbol):
-        if self.transition_legal(State, symbol):
-            return State.get_transition(symbol).output
+    def state_from_word(self,word):
+        starting_state = [x for x in self.states if x.is_start is True][0]
+        current_state = starting_state
+        for symbols in word:
+            if self.transition_legal(current_state,symbols):
+                current_state = self.next_state(current_state,symbols)
+            else:
+                print "TRANSITION NO LEGAL: state_from_word()"
+        return current_state
+
+    def transition_output(self, state, symbol):
+        if self.transition_legal(state, symbol):
+            return state.get_transition(symbol).output
         else:
             return "No Transition from this state: " + str(State) + " " + str(symbol)
 
-    '''
-    def is_accepted(self, word, logging=False):
-        # DFA Only has 1 starting state
-        starting_state = [x for x in self.states if x.is_start is True][0]
-        current_state = starting_state
-        if word == "lambda":
-            return True
-        for symbols in word:
-            if self.transition_legal(current_state,symbols):
-                if logging: print str(symbols) + " " + "Is legal character, moving state"
-                current_state = self.next_state(current_state,symbols)
-            else:
-                if logging: print "No legal transition from " + str(current_state) + " for the symbol " + str(symbols)
-                return False
-        return True
-    '''
-
-    def word_output(self, word):
-        if type(word) is not list:
-            word = [word]
-        starting_state = [x for x in self.states if x.is_start is True][0]
+    def word_output(self, word, state=None):
+        if state is not None:
+            starting_state = state
+            print "STATE PASSED TO OUTPUT"
+        else:
+            starting_state = [x for x in self.states if x.is_start is True][0]
         current_state = starting_state
         output_list = []
-        if len(word) == 0:
-            return current_state.get_transition(word)
         for symbols in word:
             output = current_state.get_transition(symbols)
+            current_state = self.next_state(current_state, symbols)
+            if output is None:
+                continue
             output = output.output
             output_list.append(output)
-            current_state = self.next_state(current_state,symbols)
         return output_list
-
 
 class State(object):
     def __init__(self, id, accepting=False, is_start=False):
@@ -178,9 +179,10 @@ class State(object):
         self.is_accepting = accepting
         self.is_start = is_start
         self.degree = len(self.Transitions)
+        self.empty = []
 
-    def add_transition(self, state, symbol, output):
-        self.Transitions.append(Transition(self, state, symbol, output))
+    def add_transition(self, state, symbol, output, is_loopback=False):
+        self.Transitions.append(Transition(self, state, symbol, output, is_loopback))
         self.degree = len(self.Transitions)
 
     def print_transitions(self):
@@ -188,6 +190,8 @@ class State(object):
 
     def get_transition(self, symbol):
         # Get the transition for the above symbol
+        if symbol == self.empty:
+            return None
         transition = next((t for t in self.Transitions if t.symbol == symbol),None)
         if transition is None:
             print "NO TRANSITION FOUND FOR STATE:" + str(self.id) + " " + "AND SYMBOL " + str(symbol)
@@ -222,13 +226,14 @@ class State(object):
 class Transition(object):
     _ID = 0
 
-    def __init__(self, state_1, state_2, symbol, output):
+    def __init__(self, state_1, state_2, symbol, output, is_loopback):
         self._id = self.__class__._ID
         self.__class__._ID += 1
         self.state_1 = state_1
         self.state_2 = state_2
         self.symbol = symbol
         self.output = output
+        self.is_loopback = is_loopback
 
     def __str__(self):
         return '(ID: ' + str(self._id) + \
@@ -240,7 +245,8 @@ class Transition(object):
     def __repr__(self):
             return ' \n Start State:' + str(self.state_1) + \
                    ' End State:' + str(self.state_2) + \
-                   ' Transition Symbol:' + str(self.symbol) +\
+                   ' Transition Symbol:' + str(self.symbol) + \
+                   ' LB:' + str(self.is_loopback) + \
                    ' Output:' + str(self.output) + ')'
 
     def __eq__(self, other):

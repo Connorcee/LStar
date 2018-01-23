@@ -2,37 +2,39 @@ import StateMachineComponents
 import itertools
 
 class ObservationTable(object):
-    def __init__(self):
-        empty = []
-        self.STA = [empty]
-        self.EXP = [empty]
-        self.OT = [[],[1],[1,2]]
+
+    def __init__(self, alphabet, logging=False):
+
+        self.states = [[]]
+        self.experiments = [[s] for s in alphabet.symbols]
+        self.possible_states = [[s] for s in alphabet.symbols]
         self.results = {}
 
-    def initialse_table(self, alphabet, logging=False):
-        symbols = alphabet.symbols
+        print "States: " + str(self.states)
+        print "Experiments:" + str(self.experiments)
+        print "Possible States:" + str(self.possible_states)
 
-        if logging:
-            print "STATE SET: " + str(self.STA)
-
-    def build_prefixes_for_symbol(self, symbols):
+    @staticmethod
+    def build_prefixes_for_symbol(symbols):
         return filter(None,[symbols[:i] for i in range(len(symbols) + 1)])
 
     def prefix_close_ot(self):
         new_list = []
-        for x in self.OT:
+        for x in self.possible_states:
             new_list.extend(self.build_prefixes_for_symbol(x))
         flist = []
         for x in new_list:
             if x not in flist:
                 flist.append(x)
-        self.OT = flist
+        self.possible_states = flist
 
-    def perform_queries(self, mealy):
-        for word in self.OT:
-            self.results[repr(word)] = mealy.word_output(word)
+    def build_query_strings(self):
+        print self.states
+        print self.possible_states
+        print self.experiments
 
-        print self.results
+
+
 
 
 
