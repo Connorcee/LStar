@@ -5,7 +5,7 @@ if __name__ == '__main__':
 
     logging = True
     # Create the machine
-    states = 8
+    states = 4
     symbols = [0, 1]
     outputs = [0, 1]
     randomise = True
@@ -31,5 +31,6 @@ if __name__ == '__main__':
     print 'Observation Table Initialized'
     print '------------------------------------------\n'
 
-    ot.build_query_strings()
+    print ot.state_experiment_output(Mealy)
+
 

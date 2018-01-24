@@ -8,7 +8,8 @@ class ObservationTable(object):
         self.states = [[]]
         self.experiments = [[s] for s in alphabet.symbols]
         self.possible_states = [[s] for s in alphabet.symbols]
-        self.results = {}
+        self.results = []
+        self.diction = {}
 
         print "States: " + str(self.states)
         print "Experiments:" + str(self.experiments)
@@ -28,10 +29,22 @@ class ObservationTable(object):
                 flist.append(x)
         self.possible_states = flist
 
-    def build_query_strings(self):
-        print self.states
-        print self.possible_states
-        print self.experiments
+    def output_from_state_concat(self, mealy, state, experiment):
+        return mealy.word_output(experiment, state)
+
+    def state_experiment_output(self,mealy):
+        for state in self.states:
+            for experiment in self.experiments:
+                self.results.append(self.output_from_state_concat(mealy,state,experiment))
+                self.diction[str(state) + str(experiment)] = self.output_from_state_concat(mealy,state,experiment)
+
+        for state in self.possible_states:
+            for experiment in self.experiments:
+                self.results.append(self.output_from_state_concat(mealy,state,experiment))
+                self.diction[str(state) + str(experiment)] = self.output_from_state_concat(mealy, state, experiment)
+
+        print self.diction
+
 
 
 

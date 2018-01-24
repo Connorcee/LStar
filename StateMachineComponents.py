@@ -82,6 +82,7 @@ class MealyMachine(object):
         self.transitionsListOrdered = False
         # Legal states are those with less transitions than the length of the alphabet
         legal_states = [x for x in self.states if x.degree < len(self.alphabet)]
+
         if len(legal_states) == 1:
             state = legal_states[0]
             transition_state = legal_states[0]
@@ -91,6 +92,7 @@ class MealyMachine(object):
             choices = sample(legal_states,2)
             state = choices[0]
             transition_state = choices[1]
+
         legal_symbols = [x for x in self.alphabet.symbols if x not in state.get_transition_symbols()]
         legal_outputs = [x for x in self.outputs.outputs if x not in state.get_transition_outputs()]
         if len(legal_outputs) == 0 or len(legal_symbols) == 0:
@@ -107,6 +109,11 @@ class MealyMachine(object):
         for state in self.states:
             legal_outputs = list(set(self.outputs.outputs) - set(state.get_transition_outputs()))
             if len(legal_outputs) == 0:
+                while state.degree < len(self.alphabet):
+                    current_symbols = state.get_transition_symbols()
+                    legal_symbols = list(set(self.alphabet.symbols) - set(current_symbols))
+                    output = choice(self.outputs.outputs)
+                    state.add_transition(state,choice(legal_symbols),output,True)
                 continue
             legal_outputs = choice(legal_outputs)
             while state.degree < len(self.alphabet):
@@ -143,10 +150,7 @@ class MealyMachine(object):
         starting_state = [x for x in self.states if x.is_start is True][0]
         current_state = starting_state
         for symbols in word:
-            if self.transition_legal(current_state,symbols):
-                current_state = self.next_state(current_state,symbols)
-            else:
-                print "TRANSITION NO LEGAL: state_from_word()"
+            current_state = self.next_state(current_state,symbols)
         return current_state
 
     def transition_output(self, state, symbol):
@@ -155,10 +159,10 @@ class MealyMachine(object):
         else:
             return "No Transition from this state: " + str(State) + " " + str(symbol)
 
-    def word_output(self, word, state=None):
-        if state is not None:
-            starting_state = state
-            print "STATE PASSED TO OUTPUT"
+    def word_output(self, word, offset_word=None):
+        if offset_word is not None:
+            starting_state = self.state_from_word(offset_word)
+            print starting_state
         else:
             starting_state = [x for x in self.states if x.is_start is True][0]
         current_state = starting_state
