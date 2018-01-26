@@ -6,7 +6,7 @@ if __name__ == '__main__':
     logging = True
     # Create the machine
     states = 4
-    symbols = [0, 1]
+    symbols = [0, 1, 2]
     outputs = [0, 1]
     randomise = True
     test_word = [1, 2, 1]
@@ -31,6 +31,12 @@ if __name__ == '__main__':
     print 'Observation Table Initialized'
     print '------------------------------------------\n'
 
-    print ot.state_experiment_output(Mealy)
+    ot.add_state([0, 1])
+    ot.add_state([1, 0, 1, 1])
+    ot.add_state([1, 0, 2, 1])
+    ot.add_state([1, 0])
+    ot.print_table()
+
+    ot.prefix_close_states()
 
 

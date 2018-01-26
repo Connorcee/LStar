@@ -11,27 +11,44 @@ class ObservationTable(object):
         self.results = []
         self.diction = {}
 
-        print "States: " + str(self.states)
-        print "Experiments:" + str(self.experiments)
-        print "Possible States:" + str(self.possible_states)
+        self.print_table()
 
     @staticmethod
     def build_prefixes_for_symbol(symbols):
         return filter(None,[symbols[:i] for i in range(len(symbols) + 1)])
 
-    def prefix_close_ot(self):
-        new_list = []
-        for x in self.possible_states:
-            new_list.extend(self.build_prefixes_for_symbol(x))
-        flist = []
-        for x in new_list:
-            if x not in flist:
-                flist.append(x)
-        self.possible_states = flist
+    def add_experiment(self, experiment):
+        self.experiments.append(experiment)
 
+    def add_state(self, state):
+        self.states.append(state)
+
+    def print_table(self):
+        print "States: " + str(self.states)
+        print "Experiments:" + str(self.experiments)
+        print "Possible States:" + str(self.possible_states)
+
+    def prefix_close_states(self):
+        # Create one list for top and bottom of the table
+        all_states = self.states[:]
+        print all_states
+        print "_____"
+        prefixed_closed_states = []
+        for x in all_states:
+            print self.build_prefixes_for_symbol(x)
+            prefixed_closed_states.extend(self.build_prefixes_for_symbol(x))
+
+        print "PREFIXED CLOSED STATES: " + str(prefixed_closed_states)
+        prefixed_closed_states = [i for i in prefixed_closed_states if i not in self.states]
+        prefixed_closed_states = [i for i in prefixed_closed_states if i not in self.experiments]
+        print "NEW STATES " + str([i for i in prefixed_closed_states if i not in self.states])
+
+
+    # Output from when we combine the state from the column and the experiment
     def output_from_state_concat(self, mealy, state, experiment):
         return mealy.word_output(experiment, state)
 
+    # Output for all states listed in the observation table
     def state_experiment_output(self,mealy):
         for state in self.states:
             for experiment in self.experiments:
