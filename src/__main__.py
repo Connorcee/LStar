@@ -1,9 +1,9 @@
 from StateMachineComponents import *
 
-from LStar import ObservationTable
+from src.LStar import ObservationTable
 
-if __name__ == '__main__':
 
+def main(args=None):
     logging = True
     # Create the machine
     states = 4
@@ -33,8 +33,14 @@ if __name__ == '__main__':
     print '------------------------------------------\n'
 
     ot.add_state([1])
-    ot.add_state([1,0])
+    ot.add_state([1,0,1])
     ot.prefix_close_states()
-    ot.state_experiment_output(Mealy)
+    ot.suffix_close_experiments()
+    ot.print_table()
+    # ot.state_experiment_output(Mealy)
+
+
+if __name__ == '__main__':
+    main()
 
 

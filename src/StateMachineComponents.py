@@ -161,6 +161,7 @@ class MealyMachine(object):
 
     def word_output(self, word, offset_word=None):
         if offset_word is not None:
+            print offset_word
             starting_state = self.state_from_word(offset_word)
         else:
             starting_state = [x for x in self.states if x.is_start is True][0]

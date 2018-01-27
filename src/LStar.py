@@ -36,29 +36,35 @@ class ObservationTable(object):
         print "Possible States:" + str(self.possible_states)
 
     def suffix_close_experiments(self):
-        current_experiments = self.experiments[:]
-        suffix_closed_experiments = []
+        current_experiments = [[1], [0,1], [1,1], [1,0,1,1]]
+        s_c_experiments = []
         for x in current_experiments:
-            suffix_closed_experiments.append(self.build_suffixes_fixes_for_symbol(x))
+            s_c_experiments.extend(self.build_suffixes_fixes_for_symbol(x))
+
+        s_c_experiments.sort()
+        s_c_experiments = list(s_c_experiments for s_c_experiments,_ in itertools.groupby(s_c_experiments))
+        print s_c_experiments
 
 
 
     def prefix_close_states(self):
         # Create one list for top and bottom of the table
         current_states = self.states[:]
-        prefixed_closed_states = []
+        pc_states = []
         for x in current_states:
-            prefixed_closed_states.extend(self.build_prefixes_for_symbol(x))
+            pc_states.extend(self.build_prefixes_for_symbol(x))
 
-        prefixed_closed_states = [i for i in prefixed_closed_states if i not in self.states]
-        prefixed_closed_states = [i for i in prefixed_closed_states if i not in self.possible_states]
-        if prefixed_closed_states:
-            self.experiments.append(prefixed_closed_states)
+        pc_states.extend(self.possible_states)
+        pc_states = list(pc_states for pc_states,_ in itertools.groupby(pc_states))
+
+        print "PREFIXED:" + str(pc_states)
+
 
     # def suffix_close_experiments(self):
 
     # Output from when we combine the state from the column and the experiment
     def output_from_state_concat(self, mealy, state, experiment):
+        print "STATE: " + str(state) + " EXPERIMENT: " + str(experiment)
         return mealy.word_output(experiment, state)
 
     # Output for all states listed in the observation table
