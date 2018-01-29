@@ -6,7 +6,7 @@ from src.LStar import ObservationTable
 def main(args=None):
     logging = True
     # Create the machine
-    states = 4
+    states = 5
     symbols = [0, 1]
     outputs = [0, 1]
     randomise = True
@@ -32,12 +32,11 @@ def main(args=None):
     print 'Observation Table Initialized'
     print '------------------------------------------\n'
 
-    ot.add_state([1])
-    ot.add_state([1,0,1])
     ot.prefix_close_states()
     ot.suffix_close_experiments()
+    ot.state_experiment_output(Mealy)
     ot.print_table()
-    # ot.state_experiment_output(Mealy)
+    ot.is_closed()
 
 
 if __name__ == '__main__':
