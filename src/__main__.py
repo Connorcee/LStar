@@ -4,10 +4,10 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
-    logging = True
+    logging = False
     # Create the machine
     states = 5
-    symbols = [0, 1]
+    symbols = [0, 1, 2]
     outputs = [0, 1]
     randomise = True
     test_word = [1, 2, 1]

@@ -89,9 +89,6 @@ class ObservationTable(object):
                 self.results.append(self.output_from_state_concat(mealy,state,experiment))
                 self.bottom_dict[str(state) + ":" + str(experiment)] = self.output_from_state_concat(mealy, state, experiment)
 
-        # print self.top_dict
-        # print self.bottom_dict
-
     def get_line_from_table(self, state_line):
         joint_dict = self.merge_two_dicts(self.top_dict, self.bottom_dict)
         all_keys = self.top_dict.keys()
@@ -112,10 +109,19 @@ class ObservationTable(object):
             print '------------------------------------------'
             print "CHECKING CLOSURE..."
             print '------------------------------------------\n'
+
         for x in self.possible_states:
             print "STATE: " + str(x)
             output_line = self.get_line_from_table(x)
-            print output_line
+            output_line.sort(key=lambda s: s.split(":")[1])
+            outputs = [x.split(":")[2] for x in output_line]
+            for y in self.states:
+                t_output_line = self.get_line_from_table(y)
+                t_output_line.sort(key=lambda s: s.split(":")[1])
+                t_outputs = [y.split(":")[2] for y in t_output_line]
+
+                print "COMPARE:" + str(t_outputs) + " TO " + str(outputs)
+                print t_outputs == outputs
 
     def get_state_output(self, state, experiment):
         return self.diction[str(state) + str(experiment)]
