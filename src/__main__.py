@@ -4,7 +4,7 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
-    logging = False
+    logging = True
     # Create the machine
     states = 5
     symbols = [0, 1, 2]
@@ -37,6 +37,10 @@ def main(args=None):
     ot.state_experiment_output(Mealy)
     ot.print_table()
     ot.is_closed()
+    ot.prefix_close_states()
+    ot.suffix_close_experiments()
+    ot.state_experiment_output(Mealy)
+    ot.print_table()
 
 
 if __name__ == '__main__':

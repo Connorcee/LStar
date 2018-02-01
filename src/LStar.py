@@ -31,11 +31,15 @@ class ObservationTable(object):
         self.states.append(state)
 
     def print_table(self):
+        print '------------------------------------------'
+        print 'Observation Table'
+        print '------------------------------------------'
         print "States: " + str(self.states)
         print "Experiments:" + str(self.experiments)
         print "Possible States:" + str(self.possible_states)
         print "Dictionary Top: " + str(self.top_dict)
         print "Dictionary Bottom: " + str(self.bottom_dict)
+        print '------------------------------------------\n'
 
     def suffix_close_experiments(self):
         current_experiments = self.experiments
@@ -111,17 +115,24 @@ class ObservationTable(object):
             print '------------------------------------------\n'
 
         for x in self.possible_states:
-            print "STATE: " + str(x)
+            states_to_add = []
             output_line = self.get_line_from_table(x)
             output_line.sort(key=lambda s: s.split(":")[1])
-            outputs = [x.split(":")[2] for x in output_line]
+            outputs = [t.split(":")[2] for t in output_line]
             for y in self.states:
                 t_output_line = self.get_line_from_table(y)
                 t_output_line.sort(key=lambda s: s.split(":")[1])
                 t_outputs = [y.split(":")[2] for y in t_output_line]
 
-                print "COMPARE:" + str(t_outputs) + " TO " + str(outputs)
-                print t_outputs == outputs
+                if self.logging:
+                    print "COMPARE:" + str(t_outputs) + " TO " + str(outputs)
+                if t_outputs != outputs:
+                    states_to_add.append(x)
+                    break
+
+            print "States to add:" + str(states_to_add)
+            self.states.extend(states_to_add)
+
 
     def get_state_output(self, state, experiment):
         return self.diction[str(state) + str(experiment)]
