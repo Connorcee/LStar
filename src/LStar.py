@@ -13,16 +13,29 @@ class ObservationTable(object):
         self.top_dict = {}
         self.bottom_dict = {}
         self.logging = logging
+        self.symbols = alphabet.symbols
 
         self.print_table()
 
     @staticmethod
-    def build_prefixes_for_symbol(symbols):
+    def build_prefixes(symbols):
         return filter(None,[symbols[:i] for i in range(len(symbols) + 1)])
 
     @staticmethod
-    def build_suffixes_fixes_for_symbol(symbols):
+    def build_suffixes(symbols):
         return filter(None,[symbols[i:] for i in range(len(symbols) + 1)])
+
+    # Merges two dictionaries, x first and then y
+    @staticmethod
+    def merge_two_dicts(x, y):
+        z = x.copy()  # start with x's keys and values
+        z.update(y)  # modifies z with y's keys and values & returns None
+        return z
+
+    # Output from the state concatenated with the experiment
+    @staticmethod
+    def output_from_state_concat(mealy, state, experiment):
+        return mealy.word_output(experiment, state)
 
     def add_experiment(self, experiment):
         self.experiments.append(experiment)
@@ -45,18 +58,17 @@ class ObservationTable(object):
         current_experiments = self.experiments
         sc_experiments = []
         for x in current_experiments:
-            sc_experiments.extend(self.build_suffixes_fixes_for_symbol(x))
+            sc_experiments.extend(self.build_suffixes(x))
         # remove duplicate states
         sc_experiments.sort()
         sc_experiments = list(s_c_experiments for s_c_experiments,_ in itertools.groupby(sc_experiments))
-        # Only add prefixes that are not in the list
+        # Only add suffixes that are not in the list
         for x in sc_experiments[:]:
             if self.experiments.__contains__(x):
                 sc_experiments.remove(x)
-                # If there are no prefixes to add, do nothing
+                # If there are no suffixes to add, do nothing
         if len(sc_experiments) > 0:
             self.experiments.extend(sc_experiments)
-
         self.experiments.sort(key=len)
 
     def prefix_close_states(self):
@@ -64,7 +76,7 @@ class ObservationTable(object):
         current_states = self.states[:]
         pc_states = []
         for x in current_states:
-            pc_states.extend(self.build_prefixes_for_symbol(x))
+            pc_states.extend(self.build_prefixes(x))
         pc_states.extend(self.possible_states)
         pc_states = list(pc_states for pc_states,_ in itertools.groupby(pc_states))
         for x in pc_states[:]:
@@ -72,13 +84,24 @@ class ObservationTable(object):
                 pc_states.remove(x)
             elif self.possible_states.__contains__(x):
                 pc_states.remove(x)
-
         if len(pc_states) > 0:
             self.possible_states.extend(pc_states)
 
-    # Output from when we combine the state from the column and the experiment
-    def output_from_state_concat(self, mealy, state, experiment):
-        return mealy.word_output(experiment, state)
+    def extend_states(self):
+        new_list = []
+        for state in self.states:
+            if not state:
+                continue
+            for symbols in self.symbols:
+                temp_s = state[:]
+                temp_s.append(symbols)
+                new_list.append(temp_s)
+        new_states = self.possible_states[:]
+        new_states.extend(new_list)
+        new_states.sort()
+        new_states = list(pc_states for pc_states,_ in itertools.groupby(new_states))
+        self.possible_states = new_states
+
 
     # Output for all states listed in the observation table
     def state_experiment_output(self,mealy):
@@ -93,6 +116,7 @@ class ObservationTable(object):
                 self.results.append(self.output_from_state_concat(mealy,state,experiment))
                 self.bottom_dict[str(state) + ":" + str(experiment)] = self.output_from_state_concat(mealy, state, experiment)
 
+    # returns the output for a line in the table for a given state row
     def get_line_from_table(self, state_line):
         joint_dict = self.merge_two_dicts(self.top_dict, self.bottom_dict)
         all_keys = self.top_dict.keys()
@@ -108,6 +132,8 @@ class ObservationTable(object):
 
         return outputs_for_line
 
+    # boolean return on if the table is closed
+    #TODO: Unfinished
     def is_closed(self):
         if self.logging:
             print '------------------------------------------'
@@ -125,26 +151,19 @@ class ObservationTable(object):
                 t_outputs = [y.split(":")[2] for y in t_output_line]
 
                 if self.logging:
-                    print "COMPARE:" + str(t_outputs) + " TO " + str(outputs)
+                    print "COMPARE:" + str(t_output_line) + " TO " + str(output_line)
                 if t_outputs != outputs:
                     states_to_add.append(x)
                     break
 
+            # Move from bottom half of table to the top half
             print "States to add:" + str(states_to_add)
             self.states.extend(states_to_add)
+            for x in states_to_add:
+                if self.possible_states.__contains__(x):
+                    print "REMOVING: " + str(x)
+                    self.possible_states.remove(x)
 
-
+    # Get the output for a given state and experiment, returns a list with one elements
     def get_state_output(self, state, experiment):
         return self.diction[str(state) + str(experiment)]
-
-    def merge_two_dicts(self, x, y):
-        z = x.copy()  # start with x's keys and values
-        z.update(y)  # modifies z with y's keys and values & returns None
-        return z
-
-
-
-
-
-
-
