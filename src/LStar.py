@@ -18,12 +18,21 @@ class ObservationTable(object):
         self.print_table()
 
     @staticmethod
+    def remove_a_from_b(a,b):
+        for x in b:
+            if a.__contains__(x):
+                b.remove(x)
+
+    @staticmethod
     def build_prefixes(symbols):
         return filter(None,[symbols[:i] for i in range(len(symbols) + 1)])
 
     @staticmethod
     def build_suffixes(symbols):
         return filter(None,[symbols[i:] for i in range(len(symbols) + 1)])
+
+    def prepare_table(self, mealy):
+        pass
 
     # Merges two dictionaries, x first and then y
     @staticmethod
@@ -37,11 +46,25 @@ class ObservationTable(object):
     def output_from_state_concat(mealy, state, experiment):
         return mealy.word_output(experiment, state)
 
+    @staticmethod
+    def remove_dups(_list):
+        _list.sort()
+        _list = list(_list for _list, _ in itertools.groupby(_list))
+        return _list
+
     def add_experiment(self, experiment):
         self.experiments.append(experiment)
 
     def add_state(self, state):
         self.states.append(state)
+        self.prefix_close_states()
+        self.extend_states()
+        self.remove_states_from_possible_states()
+
+    def remove_states_from_possible_states(self):
+        for x in self.states:
+            if self.possible_states.__contains__(x):
+                self.possible_states.remove(x)
 
     def print_table(self):
         print '------------------------------------------'
@@ -60,8 +83,7 @@ class ObservationTable(object):
         for x in current_experiments:
             sc_experiments.extend(self.build_suffixes(x))
         # remove duplicate states
-        sc_experiments.sort()
-        sc_experiments = list(s_c_experiments for s_c_experiments,_ in itertools.groupby(sc_experiments))
+        sc_experiments = self.remove_dups(sc_experiments)
         # Only add suffixes that are not in the list
         for x in sc_experiments[:]:
             if self.experiments.__contains__(x):
@@ -77,31 +99,16 @@ class ObservationTable(object):
         pc_states = []
         for x in current_states:
             pc_states.extend(self.build_prefixes(x))
-        pc_states.extend(self.possible_states)
-        pc_states = list(pc_states for pc_states,_ in itertools.groupby(pc_states))
-        for x in pc_states[:]:
-            if self.states.__contains__(x):
-                pc_states.remove(x)
-            elif self.possible_states.__contains__(x):
-                pc_states.remove(x)
-        if len(pc_states) > 0:
-            self.possible_states.extend(pc_states)
+        pc_states = self.remove_dups(pc_states)
+        self.states = pc_states
 
     def extend_states(self):
-        new_list = []
-        for state in self.states:
-            if not state:
-                continue
-            for symbols in self.symbols:
-                temp_s = state[:]
-                temp_s.append(symbols)
-                new_list.append(temp_s)
-        new_states = self.possible_states[:]
-        new_states.extend(new_list)
-        new_states.sort()
-        new_states = list(pc_states for pc_states,_ in itertools.groupby(new_states))
-        self.possible_states = new_states
-
+        for x in self.states:
+            for y in self.symbols:
+                new_x = x + [y]
+                if not self.states.__contains__(new_x):
+                    self.possible_states.append(new_x)
+        self.possible_states = self.remove_dups(self.possible_states)
 
     # Output for all states listed in the observation table
     def state_experiment_output(self,mealy):
@@ -133,15 +140,14 @@ class ObservationTable(object):
         return outputs_for_line
 
     # boolean return on if the table is closed
-    #TODO: Unfinished
     def is_closed(self):
         if self.logging:
             print '------------------------------------------'
             print "CHECKING CLOSURE..."
             print '------------------------------------------\n'
 
+        states_to_add = []
         for x in self.possible_states:
-            states_to_add = []
             output_line = self.get_line_from_table(x)
             output_line.sort(key=lambda s: s.split(":")[1])
             outputs = [t.split(":")[2] for t in output_line]
@@ -151,18 +157,19 @@ class ObservationTable(object):
                 t_outputs = [y.split(":")[2] for y in t_output_line]
 
                 if self.logging:
-                    print "COMPARE:" + str(t_output_line) + " TO " + str(output_line)
+                    print "COMPARE:" + str(t_output_line) + " TO " + str(output_line) + ":" + str(t_outputs == outputs)
                 if t_outputs != outputs:
                     states_to_add.append(x)
                     break
 
             # Move from bottom half of table to the top half
-            print "States to add:" + str(states_to_add)
-            self.states.extend(states_to_add)
-            for x in states_to_add:
-                if self.possible_states.__contains__(x):
-                    print "REMOVING: " + str(x)
-                    self.possible_states.remove(x)
+        print "States to add:" + str(states_to_add)
+        for q in states_to_add:
+            self.add_state(q)
+        if len(states_to_add) == 0:
+            return True
+        elif len(states_to_add) > 0:
+            return False
 
     # Get the output for a given state and experiment, returns a list with one elements
     def get_state_output(self, state, experiment):
