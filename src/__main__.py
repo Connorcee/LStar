@@ -6,10 +6,10 @@ from src.LStar import ObservationTable
 def main(args=None):
     logging = True
     # Create the machine
-    states = 2
+    states = 10
     symbols = [0, 1]
     outputs = [0, 1]
-    randomise = False
+    randomise = True
     test_word = [1, 2, 1]
     alphabet = Alphabet(symbols)
 
@@ -32,18 +32,13 @@ def main(args=None):
     print '------------------------------------------\n'
 
     ot.state_experiment_output(Mealy)
-    print ot.is_closed()
-    ot.state_experiment_output(Mealy)
     ot.print_table()
-
-    print ot.is_closed()
-    ot.state_experiment_output(Mealy)
+    temp = ot.is_closed_vs()
+    while temp is not None:
+        ot.add_state(temp)
+        ot.state_experiment_output(Mealy)
+        temp = ot.is_closed_vs()
     ot.print_table()
-
-    print ot.is_closed()
-    ot.state_experiment_output(Mealy)
-    ot.print_table()
-
 
 if __name__ == '__main__':
     main()

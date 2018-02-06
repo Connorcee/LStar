@@ -1,5 +1,6 @@
 import StateMachineComponents
 import itertools
+import ast
 
 class ObservationTable(object):
 
@@ -9,7 +10,6 @@ class ObservationTable(object):
         self.experiments = [[s] for s in alphabet.symbols]
         self.possible_states = [[s] for s in alphabet.symbols]
         self.results = []
-        self.diction = {}
         self.top_dict = {}
         self.bottom_dict = {}
         self.logging = logging
@@ -101,6 +101,7 @@ class ObservationTable(object):
             pc_states.extend(self.build_prefixes(x))
         pc_states = self.remove_dups(pc_states)
         self.states = pc_states
+        self.states.append([])
 
     def extend_states(self):
         for x in self.states:
@@ -126,9 +127,7 @@ class ObservationTable(object):
     # returns the output for a line in the table for a given state row
     def get_line_from_table(self, state_line):
         joint_dict = self.merge_two_dicts(self.top_dict, self.bottom_dict)
-        all_keys = self.top_dict.keys()
-        all_keys_bottom = self.bottom_dict.keys()
-        all_keys.extend(all_keys_bottom)
+        all_keys = joint_dict.keys()
         state_keys = []
         for x in all_keys:
             if str(state_line) in x.split(":")[0]:
@@ -138,6 +137,37 @@ class ObservationTable(object):
             outputs_for_line.append(str(x) + ":" +str(joint_dict[x]))
 
         return outputs_for_line
+
+    def is_closed_vs(self):
+
+        state_output_dict = {}
+        possible_output_dict = {}
+        print self.states
+        for x in self.states:
+            outputstring = self.get_line_from_table(x)
+            outputstring.sort(key=lambda s: s.split(":")[1])
+            out = [t.split(":")[2] for t in outputstring]
+            state_output_dict[str(x)] = str(out)
+        print "STATE OUTPUT: " + str(state_output_dict)
+
+        for x in self.possible_states:
+            outputstring = self.get_line_from_table(x)
+            outputstring.sort(key=lambda s: s.split(":")[1])
+            out = [t.split(":")[2] for t in outputstring]
+            possible_output_dict[str(x)] = str(out)
+        print "POSSIBLE STATE OUTPUT: " + str(possible_output_dict)
+
+        for x in possible_output_dict:
+            print possible_output_dict[x] in state_output_dict.values()
+            if not possible_output_dict[x] in state_output_dict.values():
+                print "IS: " + str(possible_output_dict[x])
+                print "IN: " + str(state_output_dict.values())
+                print "ADDING: " + x
+                return ast.literal_eval(x)
+
+        return None
+
+
 
     # boolean return on if the table is closed
     def is_closed(self):
@@ -170,7 +200,3 @@ class ObservationTable(object):
             return True
         elif len(states_to_add) > 0:
             return False
-
-    # Get the output for a given state and experiment, returns a list with one elements
-    def get_state_output(self, state, experiment):
-        return self.diction[str(state) + str(experiment)]
