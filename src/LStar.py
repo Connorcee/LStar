@@ -1,6 +1,7 @@
 import StateMachineComponents
 import itertools
 import ast
+from collections import Counter
 
 class ObservationTable(object):
 
@@ -115,14 +116,14 @@ class ObservationTable(object):
     def state_experiment_output(self,mealy):
         self.diction = {}
         for state in self.states:
-            for experiment in self.experiments:
-                self.results.append(self.output_from_state_concat(mealy,state,experiment))
-                self.top_dict[str(state) + ":" + str(experiment)] = self.output_from_state_concat(mealy,state,experiment)
+            for exp in self.experiments:
+                self.results.append(self.output_from_state_concat(mealy, state, exp))
+                self.top_dict[str(state) + ":" + str(exp)] = self.output_from_state_concat(mealy, state, exp)
 
         for state in self.possible_states:
-            for experiment in self.experiments:
-                self.results.append(self.output_from_state_concat(mealy,state,experiment))
-                self.bottom_dict[str(state) + ":" + str(experiment)] = self.output_from_state_concat(mealy, state, experiment)
+            for exp in self.experiments:
+                self.results.append(self.output_from_state_concat(mealy,state,exp))
+                self.bottom_dict[str(state) + ":" + str(exp)] = self.output_from_state_concat(mealy, state, exp)
 
     # returns the output for a line in the table for a given state row
     def get_line_from_table(self, state_line):
@@ -138,8 +139,7 @@ class ObservationTable(object):
 
         return outputs_for_line
 
-    def is_closed_vs(self):
-
+    def is_closed(self):
         state_output_dict = {}
         possible_output_dict = {}
         print self.states
@@ -167,36 +167,14 @@ class ObservationTable(object):
 
         return None
 
+    def is_consistent(self):
+        pass
 
-
-    # boolean return on if the table is closed
-    def is_closed(self):
-        if self.logging:
-            print '------------------------------------------'
-            print "CHECKING CLOSURE..."
-            print '------------------------------------------\n'
-
-        states_to_add = []
-        for x in self.possible_states:
-            output_line = self.get_line_from_table(x)
-            output_line.sort(key=lambda s: s.split(":")[1])
-            outputs = [t.split(":")[2] for t in output_line]
-            for y in self.states:
-                t_output_line = self.get_line_from_table(y)
-                t_output_line.sort(key=lambda s: s.split(":")[1])
-                t_outputs = [y.split(":")[2] for y in t_output_line]
-
-                if self.logging:
-                    print "COMPARE:" + str(t_output_line) + " TO " + str(output_line) + ":" + str(t_outputs == outputs)
-                if t_outputs != outputs:
-                    states_to_add.append(x)
-                    break
-
-            # Move from bottom half of table to the top half
-        print "States to add:" + str(states_to_add)
-        for q in states_to_add:
-            self.add_state(q)
-        if len(states_to_add) == 0:
-            return True
-        elif len(states_to_add) > 0:
-            return False
+    def all_equivalent_states(self):
+        state_lines = {}
+        for state in self.states:
+            out = self.get_line_from_table(state)
+            out.sort(key=lambda s: s.split(":")[1])
+            out = [t.split(":")[2] for t in out]
+            state_lines[str(state)] = str(out)
+            
