@@ -177,4 +177,3 @@ class ObservationTable(object):
             out.sort(key=lambda s: s.split(":")[1])
             out = [t.split(":")[2] for t in out]
             state_lines[str(state)] = str(out)
-            
