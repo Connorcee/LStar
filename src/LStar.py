@@ -171,9 +171,30 @@ class ObservationTable(object):
         pass
 
     def all_equivalent_states(self):
-        state_lines = {}
-        for state in self.states:
-            out = self.get_line_from_table(state)
-            out.sort(key=lambda s: s.split(":")[1])
-            out = [t.split(":")[2] for t in out]
-            state_lines[str(state)] = str(out)
+        state_output_dict = {}
+        for x in self.states:
+            outputstring = self.get_line_from_table(x)
+            outputstring.sort(key=lambda s: s.split(":")[1])
+            out = [t.split(":")[2] for t in outputstring]
+            state_output_dict[str(x)] = str(out)
+
+        items = sorted(state_output_dict.items(), key=lambda x: x[1])
+        matches = {}
+
+        for value, group in itertools.groupby(items, lambda x: x[1]):
+            keys = [kv[0] for kv in group]
+            if len(keys) > 1:
+                matches[value] = keys
+
+        if len(matches) >= 1:
+            return matches.values()
+
+    def equivalence_test(self, states_to_test):
+        pass
+
+
+    def check_state_equivalence(self,state_1, state_2):
+        pass
+
+    def extract_and_extend_experiments(self, state):
+        pass
