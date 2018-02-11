@@ -181,20 +181,18 @@ class ObservationTable(object):
         if self.logging:
             print "EQUIVALENT STATES UNTESTED: " + str(matches)
         return matches.values()
-
+    
+    # TODO: Possible endless loop here, need a way to mark that some states ARE equivalent even after test
     def equivalence_test(self, states):
         for equivalent in states:
-
             # choose two random equivalent states
             shuffle(equivalent)
             state1 = equivalent.pop()
             state2 = equivalent.pop()
             state1 = ast.literal_eval(state1)
             state2 = ast.literal_eval(state2)
-
             print "STATE: " + str(state1)
             print "STATE " + str(state2)
-
             for symbols in self.symbols:
                 temp1 = state1[:]
                 temp2 = state2[:]
