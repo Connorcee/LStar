@@ -1,4 +1,5 @@
 import StateMachineComponents
+from random import shuffle
 import itertools
 import ast
 from collections import Counter
@@ -142,33 +143,27 @@ class ObservationTable(object):
     def is_closed(self):
         state_output_dict = {}
         possible_output_dict = {}
-        print self.states
         for x in self.states:
             outputstring = self.get_line_from_table(x)
             outputstring.sort(key=lambda s: s.split(":")[1])
             out = [t.split(":")[2] for t in outputstring]
             state_output_dict[str(x)] = str(out)
-        print "STATE OUTPUT: " + str(state_output_dict)
 
         for x in self.possible_states:
             outputstring = self.get_line_from_table(x)
             outputstring.sort(key=lambda s: s.split(":")[1])
             out = [t.split(":")[2] for t in outputstring]
             possible_output_dict[str(x)] = str(out)
-        print "POSSIBLE STATE OUTPUT: " + str(possible_output_dict)
 
         for x in possible_output_dict:
-            print possible_output_dict[x] in state_output_dict.values()
             if not possible_output_dict[x] in state_output_dict.values():
-                print "IS: " + str(possible_output_dict[x])
-                print "IN: " + str(state_output_dict.values())
-                print "ADDING: " + x
                 return ast.literal_eval(x)
-
         return None
 
     def is_consistent(self):
-        pass
+        equiv = self.all_equivalent_states()
+        print "EQUIVALENT: " + str(equiv)
+        self.equivalence_test(equiv)
 
     def all_equivalent_states(self):
         state_output_dict = {}
@@ -177,24 +172,58 @@ class ObservationTable(object):
             outputstring.sort(key=lambda s: s.split(":")[1])
             out = [t.split(":")[2] for t in outputstring]
             state_output_dict[str(x)] = str(out)
-
         items = sorted(state_output_dict.items(), key=lambda x: x[1])
         matches = {}
-
         for value, group in itertools.groupby(items, lambda x: x[1]):
             keys = [kv[0] for kv in group]
             if len(keys) > 1:
                 matches[value] = keys
+        if self.logging:
+            print "EQUIVALENT STATES UNTESTED: " + str(matches)
+        return matches.values()
 
-        if len(matches) >= 1:
-            return matches.values()
+    def equivalence_test(self, states):
+        for equivalent in states:
 
-    def equivalence_test(self, states_to_test):
-        pass
+            # choose two random equivalent states
+            shuffle(equivalent)
+            state1 = equivalent.pop()
+            state2 = equivalent.pop()
+            state1 = ast.literal_eval(state1)
+            state2 = ast.literal_eval(state2)
 
+            print "STATE: " + str(state1)
+            print "STATE " + str(state2)
 
-    def check_state_equivalence(self,state_1, state_2):
-        pass
+            for symbols in self.symbols:
+                temp1 = state1[:]
+                temp2 = state2[:]
+                temp1.append(symbols)
+                temp2.append(symbols)
+                print "----------------"
+                print temp1
+                print temp2
+                print "EXPERIMENTS TO ADD: " + str(self.check_state_equivalence(temp1, temp2, symbols))
+                print "----------------"
+
+    def check_state_equivalence(self,state_1, state_2, symbol):
+        state1_line = self.get_line_from_table(state_1)
+        state1_line.sort(key=lambda s: s.split(":")[1])
+        state2_line = self.get_line_from_table(state_2)
+        state2_line.sort(key=lambda s: s.split(":")[1])
+
+        experiment_to_add = []
+        for out_1, out_2 in zip(state1_line, state2_line):
+            if out_1.split(":")[2] != out_2.split(":")[2]:
+                extended = symbol
+                print "APPENDED SYMBOL: " + str(extended)
+                experiment = out_1.split(":")[1]
+                experiment = ast.literal_eval(experiment)
+                print "EXPERIMENT: " + str(experiment)
+                experiment.insert(0,extended)
+                experiment_to_add.append(experiment)
+
+        return experiment_to_add
 
     def extract_and_extend_experiments(self, state):
         pass
