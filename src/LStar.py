@@ -56,6 +56,7 @@ class ObservationTable(object):
 
     def add_experiment(self, experiment):
         self.experiments.append(experiment)
+        self.suffix_close_experiments()
 
     def add_state(self, state):
         self.states.append(state)
@@ -80,20 +81,12 @@ class ObservationTable(object):
         print '------------------------------------------\n'
 
     def suffix_close_experiments(self):
-        current_experiments = self.experiments
+        current_experiments = self.experiments[:]
         sc_experiments = []
         for x in current_experiments:
             sc_experiments.extend(self.build_suffixes(x))
-        # remove duplicate states
         sc_experiments = self.remove_dups(sc_experiments)
-        # Only add suffixes that are not in the list
-        for x in sc_experiments[:]:
-            if self.experiments.__contains__(x):
-                sc_experiments.remove(x)
-                # If there are no suffixes to add, do nothing
-        if len(sc_experiments) > 0:
-            self.experiments.extend(sc_experiments)
-        self.experiments.sort(key=len)
+        self.experiments = sc_experiments
 
     def prefix_close_states(self):
         # Create one list for top and bottom of the table
@@ -162,8 +155,16 @@ class ObservationTable(object):
 
     def is_consistent(self):
         equiv = self.all_equivalent_states()
-        print "EQUIVALENT: " + str(equiv)
-        self.equivalence_test(equiv)
+        if self.logging:
+            print "EQUIVALENT: " + str(equiv)
+        exp = self.equivalence_test(equiv)
+        if exp is not None:
+            for experiments in exp:
+                if self.logging:
+                    print "ADDING: " + str(experiments)
+                self.add_experiment(experiments)
+                return False
+        return True
 
     def all_equivalent_states(self):
         state_output_dict = {}
@@ -178,12 +179,14 @@ class ObservationTable(object):
             keys = [kv[0] for kv in group]
             if len(keys) > 1:
                 matches[value] = keys
-        if self.logging:
-            print "EQUIVALENT STATES UNTESTED: " + str(matches)
         return matches.values()
     
-    # TODO: Possible endless loop here, need a way to mark that some states ARE equivalent even after test
+    # Returns the states that need to be added
     def equivalence_test(self, states):
+        consistency_dict = {}
+        exp_to_add = []
+        for equivalent in states:
+            pass
         for equivalent in states:
             # choose two random equivalent states
             shuffle(equivalent)
@@ -191,18 +194,15 @@ class ObservationTable(object):
             state2 = equivalent.pop()
             state1 = ast.literal_eval(state1)
             state2 = ast.literal_eval(state2)
-            print "STATE: " + str(state1)
-            print "STATE " + str(state2)
             for symbols in self.symbols:
                 temp1 = state1[:]
                 temp2 = state2[:]
                 temp1.append(symbols)
                 temp2.append(symbols)
-                print "----------------"
-                print temp1
-                print temp2
-                print "EXPERIMENTS TO ADD: " + str(self.check_state_equivalence(temp1, temp2, symbols))
-                print "----------------"
+                exp_to_add_l = self.check_state_equivalence(temp1,temp2,symbols)
+                exp_to_add.extend(exp_to_add_l)
+        exp_to_add = self.remove_dups(exp_to_add)
+        return exp_to_add
 
     def check_state_equivalence(self,state_1, state_2, symbol):
         state1_line = self.get_line_from_table(state_1)
@@ -214,13 +214,10 @@ class ObservationTable(object):
         for out_1, out_2 in zip(state1_line, state2_line):
             if out_1.split(":")[2] != out_2.split(":")[2]:
                 extended = symbol
-                print "APPENDED SYMBOL: " + str(extended)
                 experiment = out_1.split(":")[1]
                 experiment = ast.literal_eval(experiment)
-                print "EXPERIMENT: " + str(experiment)
                 experiment.insert(0,extended)
                 experiment_to_add.append(experiment)
-
         return experiment_to_add
 
     def extract_and_extend_experiments(self, state):

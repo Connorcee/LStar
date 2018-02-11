@@ -4,9 +4,9 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
-    logging = False
+    logging = True
     # Create the machine
-    states = 10
+    states = 100
     symbols = [0, 1]
     outputs = [0, 1]
     randomise = True
@@ -32,21 +32,24 @@ def main(args=None):
     print 'Observation Table Initialized'
     print '------------------------------------------\n'
 
-    ot.add_state([1])
-    ot.add_state([0])
-    ot.add_state([1,1])
-    ot.add_state([0,0])
-
+    ot.add_state([1,0])
+    ot.add_state([0,1])
     ot.state_experiment_output(Mealy)
     ot.print_table()
-    temp = ot.is_closed()
 
+    temp = ot.is_closed()
     while temp is not None:
         ot.add_state(temp)
         ot.state_experiment_output(Mealy)
         temp = ot.is_closed()
     ot.print_table()
 
+    ot.is_consistent()
+    ot.state_experiment_output(Mealy)
+    ot.is_consistent()
+    ot.state_experiment_output(Mealy)
+    ot.is_consistent()
+    ot.state_experiment_output(Mealy)
     ot.is_consistent()
 
 if __name__ == '__main__':
