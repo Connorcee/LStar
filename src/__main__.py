@@ -34,6 +34,7 @@ def main(args=None):
 
     ot.add_state([1,0])
     ot.add_state([0,1])
+
     ot.state_experiment_output(Mealy)
     ot.print_table()
 
@@ -44,12 +45,6 @@ def main(args=None):
         temp = ot.is_closed()
     ot.print_table()
 
-    ot.is_consistent()
-    ot.state_experiment_output(Mealy)
-    ot.is_consistent()
-    ot.state_experiment_output(Mealy)
-    ot.is_consistent()
-    ot.state_experiment_output(Mealy)
     ot.is_consistent()
 
 if __name__ == '__main__':
