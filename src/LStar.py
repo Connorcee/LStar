@@ -56,6 +56,7 @@ class ObservationTable(object):
 
     def add_experiment(self, experiment):
         self.experiments.append(experiment)
+        self.suffix_close_experiments()
 
     def add_state(self, state):
         self.states.append(state)
@@ -80,20 +81,12 @@ class ObservationTable(object):
         print '------------------------------------------\n'
 
     def suffix_close_experiments(self):
-        current_experiments = self.experiments
+        current_experiements = self.experiments[:]
         sc_experiments = []
-        for x in current_experiments:
+        for x in current_experiements:
             sc_experiments.extend(self.build_suffixes(x))
-        # remove duplicate states
         sc_experiments = self.remove_dups(sc_experiments)
-        # Only add suffixes that are not in the list
-        for x in sc_experiments[:]:
-            if self.experiments.__contains__(x):
-                sc_experiments.remove(x)
-                # If there are no suffixes to add, do nothing
-        if len(sc_experiments) > 0:
-            self.experiments.extend(sc_experiments)
-        self.experiments.sort(key=len)
+        self.experiments = sc_experiments
 
     def prefix_close_states(self):
         # Create one list for top and bottom of the table
@@ -157,13 +150,15 @@ class ObservationTable(object):
 
         for x in possible_output_dict:
             if not possible_output_dict[x] in state_output_dict.values():
+                print "Closure: " + str(x)
                 return ast.literal_eval(x)
+
         return None
 
     def is_consistent(self):
         equiv = self.all_equivalent_states()
         print "EQUIVALENT: " + str(equiv)
-        self.equivalence_test(equiv)
+        return self.equivalence_test(equiv)
 
     def all_equivalent_states(self):
         state_output_dict = {}
@@ -173,6 +168,8 @@ class ObservationTable(object):
             out = [t.split(":")[2] for t in outputstring]
             state_output_dict[str(x)] = str(out)
         items = sorted(state_output_dict.items(), key=lambda x: x[1])
+        for x in items:
+            print x
         matches = {}
         for value, group in itertools.groupby(items, lambda x: x[1]):
             keys = [kv[0] for kv in group]
@@ -182,27 +179,21 @@ class ObservationTable(object):
             print "EQUIVALENT STATES UNTESTED: " + str(matches)
         return matches.values()
 
-    # TODO: Possible endless loop here, need a way to mark that some states ARE equivalent even after test
     def equivalence_test(self, states):
+        total_to_add = []
         for equivalent in states:
             # choose two random equivalent states
-            shuffle(equivalent)
-            state1 = equivalent.pop()
-            state2 = equivalent.pop()
-            state1 = ast.literal_eval(state1)
-            state2 = ast.literal_eval(state2)
-            print "STATE: " + str(state1)
-            print "STATE " + str(state2)
-            for symbols in self.symbols:
-                temp1 = state1[:]
-                temp2 = state2[:]
-                temp1.append(symbols)
-                temp2.append(symbols)
-                print "----------------"
-                print temp1
-                print temp2
-                print "EXPERIMENTS TO ADD: " + str(self.check_state_equivalence(temp1, temp2, symbols))
-                print "----------------"
+            combinations = itertools.combinations(equivalent, 2)
+            for x in combinations:
+                for symbols in self.symbols:
+                    temp1 = ast.literal_eval(x[0])
+                    temp2 = ast.literal_eval(x[1])
+                    temp1.append(symbols)
+                    temp2.append(symbols)
+                    total_to_add.extend(self.check_state_equivalence(temp1, temp2, symbols))
+        total_to_add = self.remove_dups(total_to_add)
+        print "TOTAL TO ADD: " + str(total_to_add)
+        return total_to_add
 
     def check_state_equivalence(self,state_1, state_2, symbol):
         state1_line = self.get_line_from_table(state_1)
@@ -214,10 +205,8 @@ class ObservationTable(object):
         for out_1, out_2 in zip(state1_line, state2_line):
             if out_1.split(":")[2] != out_2.split(":")[2]:
                 extended = symbol
-                print "APPENDED SYMBOL: " + str(extended)
                 experiment = out_1.split(":")[1]
                 experiment = ast.literal_eval(experiment)
-                print "EXPERIMENT: " + str(experiment)
                 experiment.insert(0,extended)
                 experiment_to_add.append(experiment)
 
