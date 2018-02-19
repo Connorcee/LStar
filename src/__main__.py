@@ -6,7 +6,7 @@ from src.LStar import ObservationTable
 def main(args=None):
     logging = True
     # Create the machine
-    states = 500
+    states = 5
     symbols = [0, 1]
     outputs = [0, 1]
     randomise = True
@@ -31,6 +31,10 @@ def main(args=None):
     print 'Observation Table Initialized to Mealy'
     print '------------------------------------------\n'
 
+    run_l(ot, Mealy)
+
+
+def run_l(ot,Mealy):
     closed_consistent = False
     while not closed_consistent:
         consistent = ot.is_consistent()
@@ -46,9 +50,8 @@ def main(args=None):
             continue
         closed_consistent = True
         print "Closed and Consistent"
-
     ot.print_table()
-    ot.prepare_table()
+
 
 if __name__ == '__main__':
     main()

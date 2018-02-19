@@ -1,5 +1,6 @@
 from random import *
 
+
 class MealyMachine(object):
     def __init__(self, number_of_nodes, alphabet, outputs, randomise=False):
 
@@ -24,30 +25,9 @@ class MealyMachine(object):
     # TODO: Check if symbol is legal
     # TODO: Check if output is legal
     # TODO: Check if transition doesn't already exist
-    def build_machine(self):
-        print self.statesDict
-        # Build transitions
-        for state in self.states:
-            number_of_transitions = raw_input("Input number of transitions AWAY from the state:" + str(state) + "\n")
-            for x in range(int(number_of_transitions)):
-                transfer_state = raw_input("State ID to transfer to: \n")
-                transfer_state = self.statesDict[int(transfer_state)]
-                symbol = raw_input("Symbol for this transition: \n")
-                symbol = int(symbol)
-                output = raw_input("Input the output for this transition: \n")
-                output = int(output)
-                state.add_transition(transfer_state,symbol,output)
+    def build_machine(self, observation_table):
+        pass
 
-        # TODO: Check that each state isn't already an acceptor
-        i = raw_input("Number of accepting states")
-        for y in range(int(i)):
-            _id = raw_input("ID of state to be an acceptor")
-            s = self.statesDict[int(_id)]
-            s.is_accepting = True
-
-        # TODO: Check that this is legal
-        start = raw_input("ID of state state")
-        self.statesDict[int(start)].is_start = True
 
     def print_states(self):
         print "States: " + str(self.states)

@@ -1,5 +1,6 @@
 import itertools
 import ast
+from StateMachineComponents import *
 from terminaltables import ascii_table
 
 class ObservationTable(object):
@@ -15,6 +16,7 @@ class ObservationTable(object):
         self.logging = logging
         self.symbols = alphabet.symbols
         self.state_experiment_output(mealy)
+        self.outputs = mealy.outputs
 
         self.print_table()
 
@@ -31,6 +33,12 @@ class ObservationTable(object):
     @staticmethod
     def build_suffixes(symbols):
         return filter(None, [symbols[i:] for i in range(len(symbols) + 1)])
+
+    def next_state(self, state, symbol):
+        row_sequence = self.get_line_from_table(state)
+
+    def equivalent_rows(self, row):
+        pass
 
     def prepare_table(self):
         pass
@@ -113,7 +121,8 @@ class ObservationTable(object):
 
     # Output for all states listed in the observation table
     def state_experiment_output(self,mealy):
-        self.diction = {}
+        self.top_dict = {}
+        self.bottom_dict = {}
         for state in self.states:
             for exp in self.experiments:
                 self.results.append(self.output_from_state_concat(mealy, state, exp))
