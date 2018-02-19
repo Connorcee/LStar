@@ -1,12 +1,10 @@
-import StateMachineComponents
-from random import shuffle
 import itertools
 import ast
-from collections import Counter
+from terminaltables import ascii_table
 
 class ObservationTable(object):
 
-    def __init__(self, alphabet, logging=False):
+    def __init__(self, alphabet, mealy,logging=False):
 
         self.states = [[]]
         self.experiments = [[s] for s in alphabet.symbols]
@@ -16,6 +14,7 @@ class ObservationTable(object):
         self.bottom_dict = {}
         self.logging = logging
         self.symbols = alphabet.symbols
+        self.state_experiment_output(mealy)
 
         self.print_table()
 
@@ -27,14 +26,20 @@ class ObservationTable(object):
 
     @staticmethod
     def build_prefixes(symbols):
-        return filter(None,[symbols[:i] for i in range(len(symbols) + 1)])
+        return filter(None, [symbols[:i] for i in range(len(symbols) + 1)])
 
     @staticmethod
     def build_suffixes(symbols):
-        return filter(None,[symbols[i:] for i in range(len(symbols) + 1)])
+        return filter(None, [symbols[i:] for i in range(len(symbols) + 1)])
 
-    def prepare_table(self, mealy):
+    def prepare_table(self):
         pass
+        headings = ["States"]
+        temp = self.experiments[:]
+        self.experiments.sort()
+        headings.extend(self.experiments[:])
+        print headings
+
 
     # Merges two dictionaries, x first and then y
     @staticmethod
@@ -158,7 +163,11 @@ class ObservationTable(object):
     def is_consistent(self):
         equiv = self.all_equivalent_states()
         print "EQUIVALENT: " + str(equiv)
-        return self.equivalence_test(equiv)
+        states = self.equivalence_test(equiv)
+        if not states:
+            return None
+        else:
+            return states
 
     def all_equivalent_states(self):
         state_output_dict = {}
@@ -168,8 +177,6 @@ class ObservationTable(object):
             out = [t.split(":")[2] for t in outputstring]
             state_output_dict[str(x)] = str(out)
         items = sorted(state_output_dict.items(), key=lambda x: x[1])
-        for x in items:
-            print x
         matches = {}
         for value, group in itertools.groupby(items, lambda x: x[1]):
             keys = [kv[0] for kv in group]
@@ -211,6 +218,3 @@ class ObservationTable(object):
                 experiment_to_add.append(experiment)
 
         return experiment_to_add
-
-    def extract_and_extend_experiments(self, state):
-        pass

@@ -1,6 +1,5 @@
 from random import *
 
-
 class MealyMachine(object):
     def __init__(self, number_of_nodes, alphabet, outputs, randomise=False):
 

@@ -6,11 +6,10 @@ from src.LStar import ObservationTable
 def main(args=None):
     logging = True
     # Create the machine
-    states = 100
+    states = 500
     symbols = [0, 1]
     outputs = [0, 1]
     randomise = True
-    test_word = [1, 2, 1]
     alphabet = Alphabet(symbols)
 
     print 'Generating Machine'
@@ -28,37 +27,28 @@ def main(args=None):
     print '------------------------------------------'
     print 'Initializing Observation Table'
     print '------------------------------------------'
-    ot = ObservationTable(alphabet,logging)
-    ot.add_state([1,1])
-    ot.add_state([1,0])
-    ot.add_state([0,1])
-    ot.state_experiment_output(Mealy)
+    ot = ObservationTable(alphabet,Mealy,logging)
     print 'Observation Table Initialized to Mealy'
     print '------------------------------------------\n'
 
-    temp = ot.is_closed()
-    while temp is not None:
-        ot.add_state(temp)
-        ot.state_experiment_output(Mealy)
-        temp = ot.is_closed()
-    ot.print_table()
+    closed_consistent = False
+    while not closed_consistent:
+        consistent = ot.is_consistent()
+        closed = ot.is_closed()
+        if consistent is not None:
+            print "CONSISTENT: " + str(consistent)
+            [ot.add_experiment(x) for x in consistent]
+            ot.state_experiment_output(Mealy)
+            continue
+        if closed is not None:
+            ot.add_state(closed)
+            ot.state_experiment_output(Mealy)
+            continue
+        closed_consistent = True
+        print "Closed and Consistent"
 
-    temp = ot.is_consistent()
-    if temp is not None:
-        for x in temp:
-            print x
-            ot.add_experiment(x)
-    ot.state_experiment_output(Mealy)
     ot.print_table()
-
-    temp = ot.is_consistent()
-    if temp is not None:
-        for x in temp:
-            print x
-            ot.add_experiment(x)
-    ot.state_experiment_output(Mealy)
-    ot.print_table()
-    ot.is_consistent()
+    ot.prepare_table()
 
 if __name__ == '__main__':
     main()
