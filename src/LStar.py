@@ -3,10 +3,15 @@ import ast
 from StateMachineComponents import *
 from terminaltables import ascii_table
 
+class TableMachineCreator(object):
+    def create_machine(self,states, transitions, symbols, outputs):
+        number_of_states = len(states)
+        Mealy = MealyMachine(number_of_states, symbols, outputs, False,True,states, transitions)
+
+
 class ObservationTable(object):
 
     def __init__(self, alphabet, mealy,logging=False):
-
         self.states = [[]]
         self.experiments = [[s] for s in alphabet.symbols]
         self.possible_states = [[s] for s in alphabet.symbols]
@@ -34,11 +39,60 @@ class ObservationTable(object):
     def build_suffixes(symbols):
         return filter(None, [symbols[i:] for i in range(len(symbols) + 1)])
 
-    def next_state(self, state, symbol):
-        row_sequence = self.get_line_from_table(state)
+    def build_machine(self):
+        number_of_states = len(self.different_states())
+        transitions = []
+        for state in self.states:
+            for symbols in self.symbols:
+                transitions.append([str(state),
+                                    str(self.next_state(state, symbols)),
+                                    str(symbols),
+                                    str(self.table_output(state,[symbols]))])
 
-    def equivalent_rows(self, row):
-        pass
+        Mealy = MealyMachine(number_of_states, self.symbols, self.outputs.outputs, False, True, transitions)
+        return Mealy
+
+    def table_output(self, state=None, experiment=None):
+        s = str(state) + ":" + str(experiment)
+        return self.top_dict[s]
+
+    def next_state(self, state, symbol):
+        if not self.states.__contains__(state):
+            print "LStar.next_state " + str(state) + " state no found"
+            return None
+
+        appended_state = state[:]
+        appended_state.extend([symbol])
+        line = self.get_line_from_table
+        current_row_sequence = self.strip_line_of_labels(line(state))
+        appended_row_sequence = self.strip_line_of_labels(line(appended_state))
+
+        if current_row_sequence == appended_row_sequence:
+            return state
+        else:
+            for state in self.states:
+                output_row = self.strip_line_of_labels(line(state))
+                if output_row == appended_row_sequence:
+                    return state
+
+    # Loop through the "states" and identify the different state rows
+    def different_states(self):
+        rows = []
+        stripper = self.strip_line_of_labels
+        for state in self.states:
+            rows.append(self.get_line_from_table(state))
+        rows.sort(key=len)
+        rows = [stripper(s) for s in rows]
+        rows = self.remove_dups(rows)
+        return rows
+
+    def create_state_connection_dictionary(self, state_output_perm):
+        counter = 0
+        state_output_mapping = {}
+        for state in state_output_perm:
+            state_output_mapping[counter] = state
+            counter += 1
+        return state_output_mapping
 
     def prepare_table(self):
         pass
@@ -47,7 +101,6 @@ class ObservationTable(object):
         self.experiments.sort()
         headings.extend(self.experiments[:])
         print headings
-
 
     # Merges two dictionaries, x first and then y
     @staticmethod
@@ -83,15 +136,30 @@ class ObservationTable(object):
                 self.possible_states.remove(x)
 
     def print_table(self):
+        top = self.top_dict.items()
+        bottom = self.bottom_dict.items()
+        top.sort(key=lambda tup: (len(tup[0]), tup[0], tup[0].split(":")[1]))
+        bottom.sort(key=lambda tup: (len(tup[0]), tup[0], tup[0].split(":")[1]))
         print '------------------------------------------'
         print 'Observation Table'
         print '------------------------------------------'
         print "States: " + str(self.states)
         print "Experiments:" + str(self.experiments)
         print "Possible States:" + str(self.possible_states)
-        print "Dictionary Top: " + str(self.top_dict)
-        print "Dictionary Bottom: " + str(self.bottom_dict)
+        print "Dictionary Top: "
+        self.print_block(top)
+        print "Dictionary Bottom: "
+        self.print_block(bottom)
         print '------------------------------------------\n'
+
+    def print_block(self, block):
+        counter = 0
+        for entries in block:
+            print entries,
+            counter += 1
+            if counter == len(self.experiments):
+                print
+                counter = 0
 
     def suffix_close_experiments(self):
         current_experiements = self.experiments[:]
@@ -147,6 +215,10 @@ class ObservationTable(object):
 
         return outputs_for_line
 
+    def strip_line_of_labels(self, line):
+        line.sort(key=lambda s: s.split(":")[1])
+        return [t.split(":")[2] for t in line]
+
     def is_closed(self):
         state_output_dict = {}
         possible_output_dict = {}
@@ -164,14 +236,15 @@ class ObservationTable(object):
 
         for x in possible_output_dict:
             if not possible_output_dict[x] in state_output_dict.values():
-                print "Closure: " + str(x)
+                if self.logging:
+                    print "Closure: " + str(x)
                 return ast.literal_eval(x)
-
         return None
 
     def is_consistent(self):
         equiv = self.all_equivalent_states()
-        print "EQUIVALENT: " + str(equiv)
+        if self.logging:
+            print "EQUIVALENT: " + str(equiv)
         states = self.equivalence_test(equiv)
         if not states:
             return None
@@ -208,7 +281,8 @@ class ObservationTable(object):
                     temp2.append(symbols)
                     total_to_add.extend(self.check_state_equivalence(temp1, temp2, symbols))
         total_to_add = self.remove_dups(total_to_add)
-        print "TOTAL TO ADD: " + str(total_to_add)
+        if self.logging:
+            print "TOTAL TO ADD: " + str(total_to_add)
         return total_to_add
 
     def check_state_equivalence(self,state_1, state_2, symbol):

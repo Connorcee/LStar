@@ -4,11 +4,11 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
-    logging = True
+    logging = False
     # Create the machine
-    states = 5
-    symbols = [0, 1]
-    outputs = [0, 1]
+    states = 50
+    symbols = [0, 1, 2, 3, 4]
+    outputs = [0, 1, 2, 3, 4]
     randomise = True
     alphabet = Alphabet(symbols)
 
@@ -31,10 +31,13 @@ def main(args=None):
     print 'Observation Table Initialized to Mealy'
     print '------------------------------------------\n'
 
-    run_l(ot, Mealy)
+    run_l_star(ot, Mealy)
+
+    new_machine = ot.build_machine()
+    new_machine.print_machine_transitions()
 
 
-def run_l(ot,Mealy):
+def run_l_star(ot,Mealy):
     closed_consistent = False
     while not closed_consistent:
         consistent = ot.is_consistent()

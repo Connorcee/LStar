@@ -1,8 +1,8 @@
 from random import *
-
+import LStar as tools
 
 class MealyMachine(object):
-    def __init__(self, number_of_nodes, alphabet, outputs, randomise=False):
+    def __init__(self, number_of_nodes, alphabet, outputs, randomise=False, from_table=False, transitions=None):
 
         self.number_of_nodes = number_of_nodes
         self.alphabet = Alphabet(alphabet)
@@ -10,24 +10,42 @@ class MealyMachine(object):
         self.starting_state = None
         self.Walked = False
         self.states = [State(count) for count in range(0, number_of_nodes)]
-        self.transitionsListOrdered = True
         self.statesDict = self.build_state_dictionary()
         self.randomise = randomise
         self.empty = []
 
         if randomise:
             self.random_walk()
+        elif not randomise and from_table:
+            self.build_machine_from_ot(transitions)
         else:
-            self.build_machine()
+            self.build_machine_from_user()
 
-    # TODO: Add error checking for user input to this function
-    # TODO: Check if transfer state is legal
-    # TODO: Check if symbol is legal
-    # TODO: Check if output is legal
-    # TODO: Check if transition doesn't already exist
-    def build_machine(self, observation_table):
+    def build_machine_from_ot(self, transitions):
+        states = []
+        state_mapping = {}
+        for transition in transitions:
+            states.append(transition[0])
+        states = tools.ObservationTable.remove_dups(states)
+
+        counter = 0
+        for state in states:
+            state_mapping[str(state)] = counter
+            counter += 1
+        for t in transitions:
+            t[0] = state_mapping[t[0]]
+            t[1] = state_mapping[t[1]]
+            t[2] = int(t[2])
+            t[3] = int(filter(str.isdigit, t[3]))
+
+        for t in transitions:
+            if t[1] == t[0]:
+                self.statesDict[t[0]].add_transition(self.statesDict[t[1]],t[2],t[3],True)
+            else:
+                self.statesDict[t[0]].add_transition(self.statesDict[t[1]], t[2], t[3], False)
+
+    def build_machine_from_user(self):
         pass
-
 
     def print_states(self):
         print "States: " + str(self.states)
@@ -111,10 +129,6 @@ class MealyMachine(object):
             [setattr(x, 'is_accepting', True) for x in temp]
             print "Acceptors: " + str(temp)
 
-    def ending_acceptor(self):
-        if self.transitionsListOrdered:
-            self.states[len(self.states) - 1].is_accepting = True
-
     def transition_legal(self, state, symbol):
         if state in self.states:
             return any(x.symbol == symbol for x in state.Transitions)
@@ -153,6 +167,8 @@ class MealyMachine(object):
             output = output.output
             output_list.append(output)
         return output_list
+
+
 
 class State(object):
     def __init__(self, id, accepting=False, is_start=False):
@@ -203,6 +219,8 @@ class State(object):
     # TODO: Might need to be changed to check for a logical equivalence rather than an instance equivalence
     def __eq__(self, other):
         return self.id == other.id
+
+
 
 
 class Transition(object):
