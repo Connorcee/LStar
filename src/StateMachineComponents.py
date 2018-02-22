@@ -21,6 +21,7 @@ class MealyMachine(object):
         else:
             self.build_machine_from_user()
 
+    # Build a machine from an observation table
     def build_machine_from_ot(self, transitions):
         states = []
         state_mapping = {}
@@ -37,12 +38,12 @@ class MealyMachine(object):
             t[1] = state_mapping[t[1]]
             t[2] = int(t[2])
             t[3] = int(filter(str.isdigit, t[3]))
-
         for t in transitions:
             if t[1] == t[0]:
                 self.statesDict[t[0]].add_transition(self.statesDict[t[1]],t[2],t[3],True)
             else:
                 self.statesDict[t[0]].add_transition(self.statesDict[t[1]], t[2], t[3], False)
+        self.statesDict[state_mapping['[]']].is_start = True
 
     def build_machine_from_user(self):
         pass

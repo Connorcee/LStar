@@ -1,12 +1,6 @@
 import itertools
 import ast
 from StateMachineComponents import *
-from terminaltables import ascii_table
-
-class TableMachineCreator(object):
-    def create_machine(self,states, transitions, symbols, outputs):
-        number_of_states = len(states)
-        Mealy = MealyMachine(number_of_states, symbols, outputs, False,True,states, transitions)
 
 
 class ObservationTable(object):
