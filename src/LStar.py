@@ -48,7 +48,6 @@ class ObservationTable(object):
                                     str(self.next_state(state, symbols)),
                                     str(symbols),
                                     str(self.table_output(state,[symbols]))])
-
         Mealy = MealyMachine(number_of_states, self.symbols, self.outputs.outputs, False, True, transitions)
         return Mealy
 

@@ -1,14 +1,14 @@
 from StateMachineComponents import *
-
+import MachinePrinter
 from src.LStar import ObservationTable
 
 
 def main(args=None):
-    logging = False
+    logging = True
     # Create the machine
-    states = 50
-    symbols = [0, 1, 2, 3, 4]
-    outputs = [0, 1, 2, 3, 4]
+    states = 5
+    symbols = [0, 1, 2]
+    outputs = [0, 1, 2]
     randomise = True
     alphabet = Alphabet(symbols)
 
@@ -16,6 +16,11 @@ def main(args=None):
     print '------------------------------------------\n'
     # Create a state machine with the states and symbols and run the initial membership checks
     Mealy = MealyMachine(states, symbols, outputs, randomise)
+    Mealy.random_transition_pass()
+    Mealy.random_transition_pass()
+    Mealy.random_transition_pass()
+    Mealy.random_transition_pass()
+    Mealy.random_transition_pass()
     Mealy.random_transition_pass()
     Mealy.build_loopbacks()
 
@@ -36,6 +41,9 @@ def main(args=None):
     new_machine = ot.build_machine()
     new_machine.print_machine_transitions()
 
+    printer = MachinePrinter.MachinePrinter()
+    printer.print_machine("SUT",Mealy)
+    printer.print_machine("Inferred",new_machine)
 
 def run_l_star(ot,Mealy):
     closed_consistent = False
