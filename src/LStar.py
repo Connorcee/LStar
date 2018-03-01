@@ -16,6 +16,7 @@ class ObservationTable(object):
         self.symbols = alphabet.symbols
         self.state_experiment_output(mealy)
         self.outputs = mealy.outputs
+        self.equivalent_states = []
 
         self.print_table()
 
@@ -36,14 +37,41 @@ class ObservationTable(object):
     def build_machine(self):
         number_of_states = len(self.different_states())
         transitions = []
-        for state in self.states:
+        states = self.states[:]
+        equivalent_choices = []
+        equivalent_dict = {}
+        # Map equivalent states to a random equivalent state
+        if len(self.equivalent_states) > 0:
+            for equiv in self.equivalent_states:
+                if [] in equiv:
+                    rand_state = []
+                else:
+                    rand_state = choice(equiv)
+                for pairs in equiv:
+                    equivalent_dict[str(pairs)] = rand_state
+
+            for index, value in enumerate(states):
+                if str(value) in equivalent_dict:
+                    states[index] = ast.literal_eval(str(equivalent_dict[str(value)]))
+        states = self.remove_dups(states)
+
+        for state in states:
             for symbols in self.symbols:
                 transitions.append([str(state),
                                     str(self.next_state(state, symbols)),
                                     str(symbols),
                                     str(self.table_output(state,[symbols]))])
+        transitions = self.remove_dups(transitions)
+        for index, value in enumerate(transitions):
+            if value[1] in equivalent_dict:
+                transitions[index][1] = str(equivalent_dict[str(value[1])])
         Mealy = MealyMachine(number_of_states, self.symbols, self.outputs.outputs, False, True, transitions)
         return Mealy
+
+    def print_transitions_of_new_machine(self, transitions):
+        print "TRANSITIONS"
+        for x in transitions:
+            print x
 
     def table_output(self, state=None, experiment=None):
         s = str(state) + ":" + str(experiment)
@@ -236,6 +264,7 @@ class ObservationTable(object):
 
     def is_consistent(self):
         equiv = self.all_equivalent_states()
+        self.save_consistent_states(equiv)
         if self.logging:
             print "EQUIVALENT: " + str(equiv)
         states = self.equivalence_test(equiv)
@@ -243,6 +272,15 @@ class ObservationTable(object):
             return None
         else:
             return states
+
+    def save_consistent_states(self, states):
+        self.equivalent_states = []
+        for state_pairs in states:
+            temp = []
+            for pair in state_pairs:
+                temp.append(ast.literal_eval(pair))
+            self.equivalent_states.append(temp)
+
 
     def all_equivalent_states(self):
         state_output_dict = {}
@@ -257,8 +295,9 @@ class ObservationTable(object):
             keys = [kv[0] for kv in group]
             if len(keys) > 1:
                 matches[value] = keys
-        if self.logging:
-            print "EQUIVALENT STATES UNTESTED: " + str(matches)
+            if self.logging:
+                print "EQUIVALENT STATES: " + str(matches)
+            # self.equivalent_rows = matches[:]
         return matches.values()
 
     def equivalence_test(self, states):

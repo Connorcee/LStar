@@ -1,5 +1,6 @@
 from random import *
 import LStar as tools
+from time import sleep
 
 class MealyMachine(object):
     def __init__(self, number_of_nodes, alphabet, outputs, randomise=False, from_table=False, transitions=None):
@@ -23,6 +24,7 @@ class MealyMachine(object):
 
     # Build a machine from an observation table
     def build_machine_from_ot(self, transitions):
+        sleep(0.1)
         states = []
         state_mapping = {}
         for transition in transitions:
@@ -34,15 +36,24 @@ class MealyMachine(object):
             state_mapping[str(state)] = counter
             counter += 1
         for t in transitions:
+            # State beginning transition
             t[0] = state_mapping[t[0]]
+            # State targetting transition
             t[1] = state_mapping[t[1]]
+            # Symbol for transition
             t[2] = int(t[2])
+            # Output for transition
             t[3] = int(filter(str.isdigit, t[3]))
         for t in transitions:
-            if t[1] == t[0]:
-                self.statesDict[t[0]].add_transition(self.statesDict[t[1]],t[2],t[3],True)
-            else:
-                self.statesDict[t[0]].add_transition(self.statesDict[t[1]], t[2], t[3], False)
+            try:
+                if t[1] == t[0]:
+                    self.statesDict[t[0]].add_transition(self.statesDict[t[1]],t[2],t[3],True)
+                else:
+                    self.statesDict[t[0]].add_transition(self.statesDict[t[1]], t[2], t[3], False)
+            except KeyError:
+                print "KEY ERROR ON: "
+                print t
+                exit()
         self.statesDict[state_mapping['[]']].is_start = True
 
     def build_machine_from_user(self):

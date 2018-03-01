@@ -1,12 +1,13 @@
 from StateMachineComponents import *
 import MachinePrinter
+import random
 from src.LStar import ObservationTable
 
 
 def main(args=None):
-    logging = True
+    logging = False
     # Create the machine
-    states = 5
+    states = 20
     symbols = [0, 1, 2]
     outputs = [0, 1, 2]
     randomise = True
@@ -37,9 +38,17 @@ def main(args=None):
     print '------------------------------------------\n'
 
     run_l_star(ot, Mealy)
-
     new_machine = ot.build_machine()
     new_machine.print_machine_transitions()
+    counterexample = random_machine_tests(Mealy,new_machine,symbols)
+    print "COUNTER EXAMPLE " + str(counterexample)
+    while counterexample is not None:
+        ot.add_state(counterexample)
+        ot.state_experiment_output(Mealy)
+        run_l_star(ot, Mealy)
+        new_machine = ot.build_machine()
+        new_machine.print_machine_transitions()
+        counterexample = random_machine_tests(Mealy,new_machine,symbols)
 
     printer = MachinePrinter.MachinePrinter()
     printer.print_machine("SUT",Mealy)
@@ -62,6 +71,24 @@ def run_l_star(ot,Mealy):
         closed_consistent = True
         print "Closed and Consistent"
     ot.print_table()
+
+def random_machine_tests(Mealy1, Mealy2, symbols):
+    print "RANDOMLY TESTING"
+    counter = 11
+    temp = 0
+    while temp < counter:
+        temp += 1
+        x = random_test(temp,symbols)
+        print x
+        if not Mealy1.word_output(x) == Mealy2.word_output(x):
+            return x
+
+def random_test(length, symbols):
+    test = []
+    for x in range(length):
+        random_c = random.choice(symbols)
+        test.append(random_c)
+    return test
 
 
 if __name__ == '__main__':
