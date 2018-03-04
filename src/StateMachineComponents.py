@@ -1,5 +1,6 @@
 from random import *
 import LStar as tools
+import ast
 from time import sleep
 
 class MealyMachine(object):
@@ -24,7 +25,6 @@ class MealyMachine(object):
 
     # Build a machine from an observation table
     def build_machine_from_ot(self, transitions):
-        sleep(0.1)
         states = []
         state_mapping = {}
         for transition in transitions:
@@ -58,6 +58,62 @@ class MealyMachine(object):
 
     def build_machine_from_user(self):
         pass
+
+    def combine_states(self, list_of_states):
+        pass
+
+    def equivalent_states(self):
+        states = self.states[:]
+        inputs = self.alphabet.symbols[:]
+        outputs = {}
+        next_states = {}
+        state_output = {}
+        for s in states:
+            x = []
+            y = []
+            z = []
+            for i in inputs:
+                x.append(self.transition_output(s, i))
+                y.append(self.next_state(s,i).id)
+                z.extend(x)
+                z.extend(y)
+            outputs[s.id] = str(x)
+            next_states[s.id] = str(y)
+            state_output[s.id] = str(z)
+
+        rev_multidict = {}
+        for key, value in state_output.items():
+            rev_multidict.setdefault(value, set()).add(key)
+        parition = [values for key, values in rev_multidict.items() if len(values) > 1]
+        if len(parition) > 0:
+            return list(parition[0])
+
+        rev_multidict = {}
+        for key, value in outputs.items():
+            rev_multidict.setdefault(value, set()).add(key)
+        parition = [values for key, values in rev_multidict.items() if len(values) > 1]
+
+        states_to_combine = []
+        while True:
+            states_to_remove_from_set = []
+            for items in parition:
+                for elements in items:
+                    next_state = next_states[elements]
+                    next_state = ast.literal_eval(next_state)
+                    for ns in next_state:
+                        if ns not in items:
+                            states_to_remove_from_set.append(elements)
+                            break
+            if len(states_to_remove_from_set) == 0:
+                break
+            for index, value in enumerate(parition):
+                for ele in states_to_remove_from_set:
+                    if ele in parition[index]:
+                        parition[index].discard(ele)
+            print parition
+
+        if len(parition) > 0:
+            return list(parition[0])
 
     def print_states(self):
         print "States: " + str(self.states)
@@ -274,6 +330,7 @@ class Transition(object):
 class Alphabet(object):
     def __init__(self, symbols):
         self.symbols = list(set(symbols))
+        self.symbols.sort()
 
     def __len__(self):
         return len(self.symbols)
@@ -282,6 +339,7 @@ class Alphabet(object):
 class Outputs(object):
     def __init__(self, outputs):
         self.outputs = list(set(outputs))
+        self.outputs.sort()
 
     def __len__(self):
         return len(self.outputs)
