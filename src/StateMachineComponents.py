@@ -59,8 +59,31 @@ class MealyMachine(object):
     def build_machine_from_user(self):
         pass
 
+    def minimise(self):
+        equiv = self.equivalent_states()
+        while equiv is not None:
+            self.combine_states(equiv)
+            equiv = self.equivalent_states()
+
     def combine_states(self, list_of_states):
-        pass
+        if list_of_states is None:
+            return None
+        if len(list_of_states) < 2:
+            return None
+
+        state_1 = [x for x in self.states if x.id == list_of_states[0]][0]
+        state_2 = [x for x in self.states if x.id == list_of_states[1]][0]
+
+        if state_2.is_start:
+            state_1.is_start = True
+
+        for s in self.states:
+            for transitions in s.Transitions:
+                if transitions.state_2.id == state_2.id:
+                    transitions.state_2 = state_1
+
+        self.states.remove(state_2)
+        self.statesDict = self.build_state_dictionary()
 
     def equivalent_states(self):
         states = self.states[:]
@@ -93,7 +116,6 @@ class MealyMachine(object):
             rev_multidict.setdefault(value, set()).add(key)
         parition = [values for key, values in rev_multidict.items() if len(values) > 1]
 
-        states_to_combine = []
         while True:
             states_to_remove_from_set = []
             for items in parition:
@@ -110,10 +132,14 @@ class MealyMachine(object):
                 for ele in states_to_remove_from_set:
                     if ele in parition[index]:
                         parition[index].discard(ele)
-            print parition
+
+        print "PARTITION: " + str(parition)
 
         if len(parition) > 0:
-            return list(parition[0])
+            temp = [list(x) for x in parition if len(x) > 1]
+            if temp:
+                return temp[0]
+
 
     def print_states(self):
         print "States: " + str(self.states)
@@ -189,13 +215,6 @@ class MealyMachine(object):
     def print_machine_transitions(self):
         for state in self.states:
             state.print_transitions()
-
-    def random_acceptors(self, number_of_acceptors):
-        if number_of_acceptors < len(self.states):
-            temp = sample(self.states, number_of_acceptors)
-            # Assign all the states in temp to accepting states
-            [setattr(x, 'is_accepting', True) for x in temp]
-            print "Acceptors: " + str(temp)
 
     def transition_legal(self, state, symbol):
         if state in self.states:

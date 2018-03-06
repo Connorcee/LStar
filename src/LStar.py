@@ -34,6 +34,12 @@ class ObservationTable(object):
     def build_suffixes(symbols):
         return filter(None, [symbols[i:] for i in range(len(symbols) + 1)])
 
+    def state_cover(self):
+        return self.states[:]
+
+    def distinguishing_elements(self):
+        return self.experiments[:]
+
     def build_machine(self):
         number_of_states = len(self.different_states())
         transitions = []
