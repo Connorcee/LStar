@@ -8,9 +8,10 @@ from src.LStar import ObservationTable
 def main(args=None):
     logging = False
     # Create the machine
-    states = 5
-    symbols = [0, 1, 2, 3]
-    outputs = [0, 1, 2, 3]
+    states = 9
+    assumed_states = 2
+    symbols = [0, 1]
+    outputs = [0, 1]
     randomise = True
     alphabet = Alphabet(symbols)
 
@@ -47,7 +48,7 @@ def main(args=None):
         run_l_star(ot, Mealy)
         new_machine = ot.build_machine()
         new_machine.print_machine_transitions()
-        counterexample = run_w_test(ot, 4, Mealy, new_machine)
+        counterexample = run_w_test(ot, assumed_states, Mealy, new_machine)
         # counterexample = random_machine_tests(Mealy,new_machine,symbols)
 
     # run_w_test(ot,4,Mealy,new_machine)
