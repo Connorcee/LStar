@@ -124,7 +124,6 @@ class ObservationTable(object):
     def prepare_table(self):
         pass
         headings = ["States"]
-        temp = self.experiments[:]
         self.experiments.sort()
         headings.extend(self.experiments[:])
         print headings
@@ -286,7 +285,6 @@ class ObservationTable(object):
             for pair in state_pairs:
                 temp.append(ast.literal_eval(pair))
             self.equivalent_states.append(temp)
-
 
     def all_equivalent_states(self):
         state_output_dict = {}

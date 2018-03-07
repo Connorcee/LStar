@@ -8,8 +8,8 @@ from src.LStar import ObservationTable
 def main(args=None):
     logging = False
     # Create the machine
-    states = 9
-    assumed_states = 2
+    states = 15
+    assumed_states = 17
     symbols = [0, 1]
     outputs = [0, 1]
     randomise = True
@@ -40,15 +40,13 @@ def main(args=None):
 
     run_l_star(ot, Mealy)
     new_machine = ot.build_machine()
-    new_machine.print_machine_transitions()
     counterexample = random_machine_tests(Mealy,new_machine,symbols)
     while counterexample is not None:
         ot.add_state(counterexample)
         ot.state_experiment_output(Mealy)
         run_l_star(ot, Mealy)
         new_machine = ot.build_machine()
-        new_machine.print_machine_transitions()
-        counterexample = run_w_test(ot, assumed_states, Mealy, new_machine)
+        counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
         # counterexample = random_machine_tests(Mealy,new_machine,symbols)
 
     # run_w_test(ot,4,Mealy,new_machine)
@@ -107,15 +105,17 @@ def w_test(W, C, N, Mealy1, Mealy2):
     print "SET CONST: " + str(set_const)
     print "W " + str(set_const[0])
     print "C " + str(set_const[1])
-    for x in range(N):
+    for y in range(N):
         set_const.append(C)
-    for x in set_const:
-        print "SC: " + str(x)
-    for element in itertools.product(*set_const):
-        x = list(itertools.chain.from_iterable(element))
-        if not Mealy1.word_output(x) == Mealy2.word_output(x):
-            print "COUNTER EXAMPLE" + str(x)
-            return x
+        for p in set_const:
+            print "SC: " + str(p)
+        for element in itertools.product(*set_const):
+            x = list(itertools.chain.from_iterable(element))
+            if not Mealy1.word_output(x) == Mealy2.word_output(x):
+                print "COUNTER EXAMPLE" + str(x)
+                return x
+
+    print "NO COUNTEREXAMPLE FOUND"
     return None
 
 if __name__ == '__main__':

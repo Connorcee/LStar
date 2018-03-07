@@ -140,7 +140,6 @@ class MealyMachine(object):
             if temp:
                 return temp[0]
 
-
     def print_states(self):
         print "States: " + str(self.states)
 
@@ -166,7 +165,6 @@ class MealyMachine(object):
                 next_state = self.states[index + 1]
                 item.add_transition(next_state, random_symbol, random_output)
 
-    # Not completely pythonic because states should be a dictionary
     def create_random_legal_transition(self, verbose=False):
         if verbose:
             print "Generating Random Transition"
@@ -256,8 +254,8 @@ class MealyMachine(object):
         return output_list
 
 
-
 class State(object):
+
     def __init__(self, id, accepting=False, is_start=False):
         self.id = id
         self.Transitions = []
@@ -308,8 +306,6 @@ class State(object):
         return self.id == other.id
 
 
-
-
 class Transition(object):
     _ID = 0
 
@@ -345,6 +341,7 @@ class Transition(object):
     def get_end_state(self):
         return self.state_2
 
+
 # Alphabet of the Mealy machine
 class Alphabet(object):
     def __init__(self, symbols):
@@ -353,6 +350,7 @@ class Alphabet(object):
 
     def __len__(self):
         return len(self.symbols)
+
 
 # Mealy Machines have outputs on transitions
 class Outputs(object):
