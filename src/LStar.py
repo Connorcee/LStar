@@ -14,11 +14,10 @@ class ObservationTable(object):
         self.bottom_dict = {}
         self.logging = logging
         self.symbols = alphabet.symbols
+        self.mq_counter = 0
         self.state_experiment_output(mealy)
         self.outputs = mealy.outputs
         self.equivalent_states = []
-
-        self.print_table()
 
     @staticmethod
     def remove_a_from_b(a,b):
@@ -71,7 +70,7 @@ class ObservationTable(object):
         for index, value in enumerate(transitions):
             if value[1] in equivalent_dict:
                 transitions[index][1] = str(equivalent_dict[str(value[1])])
-        Mealy = MealyMachine(number_of_states, self.symbols, self.outputs.outputs, False, True, transitions)
+        Mealy = MealyMachine(number_of_states, self.symbols, self.outputs.outputs, False, False, True, transitions)
         return Mealy
 
     def print_transitions_of_new_machine(self, transitions):
@@ -136,8 +135,8 @@ class ObservationTable(object):
         return z
 
     # Output from the state concatenated with the experiment
-    @staticmethod
-    def output_from_state_concat(mealy, state, experiment):
+    def output_from_state_concat(self, mealy, state, experiment):
+        self.mq_counter += 1
         return mealy.word_output(experiment, state)
 
     @staticmethod

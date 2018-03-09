@@ -1,10 +1,11 @@
 from random import *
 import LStar as tools
 import ast
+import uuid
 from time import sleep
 
 class MealyMachine(object):
-    def __init__(self, number_of_nodes, alphabet, outputs, randomise=False, from_table=False, transitions=None):
+    def __init__(self, number_of_nodes, alphabet, outputs, path=False, randomise=False, from_table=False, transitions=None):
 
         self.number_of_nodes = number_of_nodes
         self.alphabet = Alphabet(alphabet)
@@ -21,7 +22,7 @@ class MealyMachine(object):
         elif not randomise and from_table:
             self.build_machine_from_ot(transitions)
         else:
-            self.build_machine_from_user()
+            self.load_machine(path)
 
     # Build a machine from an observation table
     def build_machine_from_ot(self, transitions):
@@ -56,8 +57,39 @@ class MealyMachine(object):
                 exit()
         self.statesDict[state_mapping['[]']].is_start = True
 
-    def build_machine_from_user(self):
+    def load_machine(self,path):
+        # All states present, contain no transitions
+        if path:
+            file_object = open(path,"r")
+        else:
+            print "PATH IS FALSE"
+            exit()
+        machine = []
+        for line in file_object:
+            line = line.split()
+            if line:
+                line = [i for i in line]
+                # State, Symbol, output, loopback
+                machine.append(line)
+                if line[0] == line[1]:
+                    self.states[int(line[0])].add_transition(self.states[int(line[1])],int(line[2]),int(line[3]),True)
+                else:
+                    self.states[int(line[0])].add_transition(self.states[int(line[1])], int(line[2]), int(line[3]),False)
+                if line[4] == 'S':
+                    self.states[int(line[0])].is_start = True
+        self.build_state_dictionary()
         pass
+
+    def save_machine(self):
+        name = "STATES " + str(len(self.states))
+        f=open(name,"w+")
+        for s in self.states:
+            for t in s.Transitions:
+                if s.is_start:
+                    f.write('{} {} {} {} S\n'.format(t.state_1.id,t.state_2.id,t.symbol,t.output))
+                else:
+                    f.write('{} {} {} {} N\n'.format(t.state_1.id, t.state_2.id, t.symbol, t.output))
+        f.close()
 
     def minimise(self):
         equiv = self.equivalent_states()
@@ -132,8 +164,6 @@ class MealyMachine(object):
                 for ele in states_to_remove_from_set:
                     if ele in parition[index]:
                         parition[index].discard(ele)
-
-        print "PARTITION: " + str(parition)
 
         if len(parition) > 0:
             temp = [list(x) for x in parition if len(x) > 1]
