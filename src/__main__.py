@@ -3,20 +3,27 @@ import MachinePrinter
 import itertools
 import random
 import uuid
+import os
 from src.LStar import ObservationTable
 
 
 def main(args=None):
-    iterate(5, 1, False)
-    '''
-    for n in range(5,41):
-        
-        print "RUNNING FOR {} STATES".format(n)
-        iterate(n, 0, False)
-        iterate(n, 0, False, "random")
-    '''
+    iterate(5,1,True,"w")
 
-def iterate(no_states,assumed,randomise,filename=""):
+
+# Generate a machine and save it into the according folder for the path
+def generate_machine(nostates):
+    states = nostates
+    symbols = [0, 1, 2]
+    outputs = [0, 1, 2]
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print dir_path
+    path = "{}/{}/machine-{}.txt".format(dir_path,nostates,uuid.uuid4())
+    Mealy = MealyMachine(states, symbols, outputs, path, True)
+    Mealy.save_machine(path)
+
+
+def iterate(no_states, assumed, randomise, mode, path=False):
     logging = False
     # Create the machine
     states = no_states
@@ -25,7 +32,6 @@ def iterate(no_states,assumed,randomise,filename=""):
     outputs = [0, 1, 2]
     randomise = randomise
     alphabet = Alphabet(symbols)
-    path = "STATES " + str(states)
 
     print '------------------------------------------\n'
     print 'Generating Machine'
@@ -59,19 +65,21 @@ def iterate(no_states,assumed,randomise,filename=""):
         run_l_star(ot, Mealy)
         new_machine = ot.build_machine()
         EQ_counter += 1
-        if filename == 'random':
+        if mode == 'random':
             counterexample = random_machine_tests(Mealy, new_machine,assumed_states, symbols)
-        else:
+        elif mode == 'w':
             counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
 
-
-    printer = MachinePrinter.MachinePrinter()
-    printer.print_machine("ZSUT " + str(uuid.uuid4()),Mealy)
-    printer.print_machine("ZInferred " + str(uuid.uuid4()),new_machine)
+    # printer = MachinePrinter.MachinePrinter()
+    # printer.print_machine("ZSUT " + str(uuid.uuid4()),Mealy)
+    # printer.print_machine("ZInferred " + str(uuid.uuid4()),new_machine)
     print "Equivalence Queries: " + str(EQ_counter)
     print "Membership Query Counter: " + str(ot.mq_counter)
-    m = open(filename + "membership.txt", "a")
-    e = open(filename + "equivalence.txt", "a")
+    # open a file with the modes
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    dir_path = dir_path + "/State/QueryData"
+    m = open('{}/{}-{}-membership.txt'.format(dir_path,mode,states), "a")
+    e = open('{}/{}-{}-equivalence.txt'.format(dir_path,mode,states), "a")
     m.write(str(states) + ' ' + str(ot.mq_counter) + '\n')
     e.write(str(EQ_counter)+ '\n')
     m.close()

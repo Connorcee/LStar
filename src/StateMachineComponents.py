@@ -21,7 +21,7 @@ class MealyMachine(object):
             self.random_walk()
         elif not randomise and from_table:
             self.build_machine_from_ot(transitions)
-        else:
+        elif path is not False and randomise is False:
             self.load_machine(path)
 
     # Build a machine from an observation table
@@ -78,10 +78,12 @@ class MealyMachine(object):
                 if line[4] == 'S':
                     self.states[int(line[0])].is_start = True
         self.build_state_dictionary()
-        pass
 
-    def save_machine(self):
-        name = "STATES " + str(len(self.states))
+    def save_machine(self, path=False):
+        if not path:
+            name = "STATES " + str(len(self.states))
+        else:
+            name = path
         f=open(name,"w+")
         for s in self.states:
             for t in s.Transitions:
