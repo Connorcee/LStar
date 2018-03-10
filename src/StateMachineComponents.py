@@ -17,6 +17,7 @@ class MealyMachine(object):
         self.randomise = randomise
         self.empty = []
 
+        # Handle machine generation
         if randomise:
             self.random_walk()
         elif not randomise and from_table:
@@ -39,7 +40,7 @@ class MealyMachine(object):
         for t in transitions:
             # State beginning transition
             t[0] = state_mapping[t[0]]
-            # State targetting transition
+            # State targeting transition
             t[1] = state_mapping[t[1]]
             # Symbol for transition
             t[2] = int(t[2])

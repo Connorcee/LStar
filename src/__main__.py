@@ -23,7 +23,7 @@ def generate_machine(nostates):
     Mealy.save_machine(path)
 
 
-def iterate(no_states, assumed, randomise, mode, path=False):
+def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False):
     logging = False
     # Create the machine
     states = no_states
@@ -41,14 +41,7 @@ def iterate(no_states, assumed, randomise, mode, path=False):
         for i in symbols:
             Mealy.random_transition_pass()
         Mealy.build_loopbacks()
-        # Make the machine minimal
         Mealy.minimise()
-
-    # Mealy.save_machine()
-
-    if logging:
-        Mealy.print_states()
-        Mealy.print_machine_transitions()
 
     print 'Generation Complete'
     print 'Initializing Observation Table'
@@ -57,7 +50,14 @@ def iterate(no_states, assumed, randomise, mode, path=False):
 
     run_l_star(ot, Mealy)
     new_machine = ot.build_machine()
-    counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
+    if mode == 'random':
+        counterexample = random_machine_tests(Mealy, new_machine, assumed_states, symbols)
+    elif mode == 'w':
+        counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
+    else:
+        print "NO TEST MODE SELECTED"
+        exit()
+
     EQ_counter = 0
     while counterexample is not None:
         ot.add_state(counterexample)
@@ -70,9 +70,10 @@ def iterate(no_states, assumed, randomise, mode, path=False):
         elif mode == 'w':
             counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
 
-    # printer = MachinePrinter.MachinePrinter()
-    # printer.print_machine("ZSUT " + str(uuid.uuid4()),Mealy)
-    # printer.print_machine("ZInferred " + str(uuid.uuid4()),new_machine)
+    if print_machine:
+        printer = MachinePrinter.MachinePrinter()
+        printer.print_machine("ZSUT " + str(uuid.uuid4()),Mealy)
+        printer.print_machine("ZInferred " + str(uuid.uuid4()),new_machine)
     print "Equivalence Queries: " + str(EQ_counter)
     print "Membership Query Counter: " + str(ot.mq_counter)
     # open a file with the modes
@@ -85,6 +86,7 @@ def iterate(no_states, assumed, randomise, mode, path=False):
     m.close()
     e.close()
     print '------------------------------------------\n'
+
 
 def run_l_star(ot,Mealy):
     closed_consistent = False
@@ -101,6 +103,7 @@ def run_l_star(ot,Mealy):
             continue
         closed_consistent = True
 
+
 def random_machine_tests(Mealy1, Mealy2,assumed, symbols):
     print "RANDOMLY TESTING"
     counter = 10000
@@ -113,6 +116,7 @@ def random_machine_tests(Mealy1, Mealy2,assumed, symbols):
             print "COUNTER EXAMPLE: " + str(x)
             return x
 
+
 def random_test(length, symbols):
     test = []
     for x in range(length):
@@ -120,11 +124,13 @@ def random_test(length, symbols):
         test.append(random_c)
     return test
 
+
 def run_w_test(ObservationTable, assumed_states, Mealy1, Mealy2):
     W = ObservationTable.distinguishing_elements()
     Cover = ObservationTable.state_cover()
     counterexample = w_test(W, Cover, assumed_states, Mealy1, Mealy2)
     return counterexample
+
 
 def w_test(W, C, N, Mealy1, Mealy2):
     if C.__contains__([]):
@@ -132,17 +138,31 @@ def w_test(W, C, N, Mealy1, Mealy2):
     set_const = [W,C]
     for y in range(N):
         set_const.append(C)
-        for p in set_const:
-            pass
-            # print "SC: " + str(p)
         for element in itertools.product(*set_const):
             x = list(itertools.chain.from_iterable(element))
             if not Mealy1.word_output(x) == Mealy2.word_output(x):
-                # print "COUNTER EXAMPLE" + str(x)
                 return x
-
-    # print "NO COUNTEREXAMPLE FOUND"
     return None
+
+def machines_equivalent(Mealy1, Mealy2):
+    # Inital checks to see if they are equivalent
+    counter_1 = 0
+    counter_2 = 0
+
+    for s0 in Mealy1.states:
+        for t0 in s0.Transitions:
+            counter_1 += 1
+    for s1 in Mealy2.states:
+        for t1 in s1.Transitions:
+            counter_2 += 1
+    if len(Mealy1.states) != len(Mealy2.states):
+        print "Unequal number of states"
+        return False
+
+    elif counter_1 != counter_2:
+        print "unequal number of transitions"
+        return False
+    pass
 
 if __name__ == '__main__':
     main()
