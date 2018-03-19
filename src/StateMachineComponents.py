@@ -1,6 +1,7 @@
 from random import *
 import LStar as tools
 import ast
+import os
 import uuid
 from time import sleep
 
@@ -24,6 +25,9 @@ class MealyMachine(object):
             self.build_machine_from_ot(transitions)
         elif path is not False and randomise is False:
             self.load_machine(path)
+        elif path is False and randomise is False:
+            print "NO PATH PROVIDED, NO RANDOM ALLOWED, EXITING"
+            exit()
 
     # Build a machine from an observation table
     def build_machine_from_ot(self, transitions):
@@ -61,7 +65,9 @@ class MealyMachine(object):
     def load_machine(self,path):
         # All states present, contain no transitions
         if path:
-            file_object = open(path,"r")
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            dir_path = dir_path + '\\State\\{}\\'.format(self.number_of_nodes)
+            file_object = open(dir_path + path,"r")
         else:
             print "PATH IS FALSE"
             exit()
@@ -78,7 +84,6 @@ class MealyMachine(object):
                     self.states[int(line[0])].add_transition(self.states[int(line[1])], int(line[2]), int(line[3]),False)
                 if line[4] == 'S':
                     self.states[int(line[0])].is_start = True
-        self.build_state_dictionary()
 
     def save_machine(self, path=False):
         if not path:

@@ -4,11 +4,15 @@ import itertools
 import random
 import uuid
 import os
+from sys import platform
+import glob
 from src.LStar import ObservationTable
 
 
 def main(args=None):
-    iterate(5,1,True,"w")
+
+    for machines in machines_from_folder(7):
+        iterate(7,3,False,"w",machines)
 
 
 # Generate a machine and save it into the according folder for the path
@@ -18,9 +22,22 @@ def generate_machine(nostates):
     outputs = [0, 1, 2]
     dir_path = os.path.dirname(os.path.realpath(__file__))
     print dir_path
-    path = "{}/{}/machine-{}.txt".format(dir_path,nostates,uuid.uuid4())
+    if platform != "win32":
+        path = "{}/State/{}/machine-{}.txt".format(dir_path,nostates,uuid.uuid4())
+    else:
+        path = "{}\\State\\{}\\machine-{}.txt".format(dir_path, nostates, uuid.uuid4())
     Mealy = MealyMachine(states, symbols, outputs, path, True)
+    for i in symbols:
+        Mealy.random_transition_pass()
+    Mealy.build_loopbacks()
     Mealy.save_machine(path)
+
+def machines_from_folder(no_states):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    print dir_path
+    path = dir_path + "/State/{}".format(no_states)
+    dirls = os.listdir(path)
+    return dirls
 
 
 def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False):
@@ -41,7 +58,8 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
         for i in symbols:
             Mealy.random_transition_pass()
         Mealy.build_loopbacks()
-        Mealy.minimise()
+
+    Mealy.minimise()
 
     print 'Generation Complete'
     print 'Initializing Observation Table'
@@ -50,6 +68,7 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
 
     run_l_star(ot, Mealy)
     new_machine = ot.build_machine()
+    equivalent = machines_equivalent(Mealy, new_machine)
     if mode == 'random':
         counterexample = random_machine_tests(Mealy, new_machine, assumed_states, symbols)
     elif mode == 'w':
@@ -70,18 +89,31 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
         elif mode == 'w':
             counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
 
+    print "Equivalence Queries: " + str(EQ_counter)
+    print "Membership Query Counter: " + str(ot.mq_counter)
+    print "Inferred: " + str(machines_equivalent(Mealy,new_machine))
+    if not machines_equivalent(Mealy,new_machine):
+        printer = MachinePrinter.MachinePrinter()
+        printer.print_machine("ZSUT " + str(uuid.uuid4()), Mealy)
+        printer.print_machine("ZInferred " + str(uuid.uuid4()), new_machine)
+        W = ot.distinguishing_elements()
+        SC = ot.state_cover()
+        set_const = [W,SC]
+        print "W" + str(W)
+        print "State Cover" + str(SC)
+        print "SET CONST" + str(set_const)
+        ot.print_table()
+
     if print_machine:
         printer = MachinePrinter.MachinePrinter()
         printer.print_machine("ZSUT " + str(uuid.uuid4()),Mealy)
         printer.print_machine("ZInferred " + str(uuid.uuid4()),new_machine)
-    print "Equivalence Queries: " + str(EQ_counter)
-    print "Membership Query Counter: " + str(ot.mq_counter)
     # open a file with the modes
     dir_path = os.path.dirname(os.path.realpath(__file__))
     dir_path = dir_path + "/State/QueryData"
     m = open('{}/{}-{}-membership.txt'.format(dir_path,mode,states), "a")
     e = open('{}/{}-{}-equivalence.txt'.format(dir_path,mode,states), "a")
-    m.write(str(states) + ' ' + str(ot.mq_counter) + '\n')
+    m.write(str(states) + ' ' + str(ot.mq_counter) + ' ' + str(machines_equivalent(Mealy,new_machine)) + '\n')
     e.write(str(EQ_counter)+ '\n')
     m.close()
     e.close()
@@ -133,11 +165,9 @@ def run_w_test(ObservationTable, assumed_states, Mealy1, Mealy2):
 
 
 def w_test(W, C, N, Mealy1, Mealy2):
-    if C.__contains__([]):
-        C.remove([])
     set_const = [W,C]
     for y in range(N):
-        set_const.append(C)
+        set_const.append(W)
         for element in itertools.product(*set_const):
             x = list(itertools.chain.from_iterable(element))
             if not Mealy1.word_output(x) == Mealy2.word_output(x):
@@ -162,7 +192,7 @@ def machines_equivalent(Mealy1, Mealy2):
     elif counter_1 != counter_2:
         print "unequal number of transitions"
         return False
-    pass
+    return True
 
 if __name__ == '__main__':
     main()
