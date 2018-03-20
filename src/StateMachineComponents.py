@@ -100,30 +100,120 @@ class MealyMachine(object):
         f.close()
 
     def minimise(self):
-        equiv = self.equivalent_states()
-        while equiv is not None:
-            self.combine_states(equiv)
-            equiv = self.equivalent_states()
+        equiv = self.equivalent_states_2()
+        if equiv is None:
+            return None
+        for item in equiv:
+            self.combine_states(item)
+
 
     def combine_states(self, list_of_states):
         if list_of_states is None:
             return None
         if len(list_of_states) < 2:
             return None
+        state_list = []
+        for items in list_of_states:
+            # Get all states to be combined
+            state = next(x for x in self.states if x.id == items)
+            state_list.append(state)
+        # Check is any of the states are the start state
+        start = [x for x in state_list if x.is_start]
+        if not start:
+            # List is empty, merge into any state
+            start = state_list.pop()
+        print start
 
-        state_1 = [x for x in self.states if x.id == list_of_states[0]][0]
-        state_2 = [x for x in self.states if x.id == list_of_states[1]][0]
-
-        if state_2.is_start:
-            state_1.is_start = True
-
-        for s in self.states:
-            for transitions in s.Transitions:
-                if transitions.state_2.id == state_2.id:
-                    transitions.state_2 = state_1
-
-        self.states.remove(state_2)
+        for elem in state_list:
+            for s in self.states:
+                for transitions in s.Transitions:
+                    if transitions.state_2.id == elem.id:
+                        transitions.state_2 = start
+            self.states.remove(elem)
         self.statesDict = self.build_state_dictionary()
+
+    def equivalent_states_2(self):
+        # Memory copy of states and inputs
+        states = self.states[:]
+        inputs = self.alphabet.symbols[:]
+        # Table to perform the reduction
+        table = []
+        mapped_table = []
+        # Get outputs and next states for each state
+        for s in states:
+            next_state_list = []
+            output_list = []
+            for i in inputs:
+                output_list.append(self.transition_output(s,i))
+                next_state_list.append(self.next_state(s,i).id)
+            row = [s.id,next_state_list,str(output_list)]
+            table.append(row)
+        perms = []
+        # Create the list of different output perms
+        for line in table:
+            if perms.__contains__(line[2]):
+                pass
+            else:
+                perms.append(line[2])
+        # make perms a dictionary, mapping each element to a number
+        perms = {k: v for v, k in enumerate(perms)}
+        # Add mappings to table
+        for line in table:
+            line.append(perms[line[2]])
+        for line in table:
+            temp = []
+            for ele in line[1]:
+                item = next(x for x in table if x[0] == ele)
+                temp.append(item[3])
+            line.append(temp)
+        table.sort(key=lambda x: x[3])
+        table = self.regenerate_table(table)
+        combine_mapping = {}
+        for line in table:
+            combine_mapping[line[0]] = line[3]
+        for i in combine_mapping:
+            print i, combine_mapping[i]
+        rev_multidict = {}
+        for key, value in combine_mapping.items():
+            rev_multidict.setdefault(value, set()).add(key)
+        equiv_states = [values for key, values in rev_multidict.items() if len(values) > 1]
+        # No states to combine
+        if len(equiv_states) < 1:
+            return None
+        for index, ele in enumerate(equiv_states):
+            equiv_states[index] = list(ele)
+        return equiv_states
+
+    def regenerate_table(self, table):
+        perms = []
+        old_table = table[:]
+        for line in table:
+            if perms.__contains__(line[4]):
+                pass
+            else:
+                perms.append(line[4])
+        for index, line in enumerate(perms):
+            perms[index] = str(line)
+        perms = {k: v for v, k in enumerate(perms)}
+        for index, line in enumerate(table):
+            table[index][3] = perms[str(table[index][4])]
+        for index, line in enumerate(table):
+            temp = []
+            for ele in line[1]:
+                item = next(x for x in table if x[0] == ele)
+                temp.append(item[3])
+            table[index][4] = temp
+        table.sort(key=lambda x: x[3])
+        contd = self.equal_tables(table, old_table)
+        if not contd:
+            table = self.regenerate_table(table)
+        return table
+
+    def equal_tables(self, table1, table2):
+        for line1, line2 in zip(table1, table2):
+            if line1 != line2:
+                return False
+        return True
 
     def equivalent_states(self):
         states = self.states[:]

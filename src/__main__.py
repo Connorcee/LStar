@@ -1,4 +1,5 @@
 from StateMachineComponents import *
+from copy import deepcopy
 import MachinePrinter
 import itertools
 import random
@@ -10,9 +11,10 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
+    states = 5
 
-    for machines in machines_from_folder(7):
-        iterate(7,3,False,"w",machines)
+    for machines in machines_from_folder(states):
+        iterate(states,3,False,"w",machines)
 
 
 # Generate a machine and save it into the according folder for the path
@@ -59,7 +61,7 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
             Mealy.random_transition_pass()
         Mealy.build_loopbacks()
 
-    Mealy.minimise()
+    # Mealy.minimise()
 
     print 'Generation Complete'
     print 'Initializing Observation Table'
@@ -111,8 +113,8 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
     # open a file with the modes
     dir_path = os.path.dirname(os.path.realpath(__file__))
     dir_path = dir_path + "/State/QueryData"
-    m = open('{}/{}-{}-membership.txt'.format(dir_path,mode,states), "a")
-    e = open('{}/{}-{}-equivalence.txt'.format(dir_path,mode,states), "a")
+    m = open('{}/{}-{}-/output/membership.txt'.format(dir_path,mode,states), "a")
+    e = open('{}/{}-{}-/output/equivalence.txt'.format(dir_path,mode,states), "a")
     m.write(str(states) + ' ' + str(ot.mq_counter) + ' ' + str(machines_equivalent(Mealy,new_machine)) + '\n')
     e.write(str(EQ_counter)+ '\n')
     m.close()
@@ -192,6 +194,36 @@ def machines_equivalent(Mealy1, Mealy2):
     elif counter_1 != counter_2:
         print "unequal number of transitions"
         return False
+    # Create copy of the machines
+    test_mealy = deepcopy(Mealy1)
+    test_mealy_2 = deepcopy(Mealy2)
+    # Offset to rename the states to allow them to be combined
+    state_offset = len(test_mealy.states)
+    # Preserve the start ID's to connect the temp state
+    machine_1_start = [x for x in test_mealy.states if x.is_start][0]
+    machine_2_start = [x for x in test_mealy_2.states if x.is_start][0]
+    # Offset one of the machines IDs
+    for state in test_mealy.states:
+        state.id += state_offset
+    for state in test_mealy.states:
+        test_mealy_2.states.append(state)
+    tempstate = State(len(test_mealy_2.states),False,True)
+    tempstate.add_transition(machine_1_start,Mealy1.alphabet.symbols[0],Mealy1.outputs.outputs[0],False)
+    tempstate.add_transition(machine_2_start, Mealy1.alphabet.symbols[1], Mealy1.outputs.outputs[1], False)
+    tempstate.add_transition(tempstate, Mealy1.alphabet.symbols[2], Mealy1.outputs.outputs[2], True)
+    machine_1_start.is_start = False
+    machine_2_start.is_start = False
+    test_mealy_2.states.append(tempstate)
+    test_mealy_2.statesDict = test_mealy_2.build_state_dictionary()
+    test_mealy_2.minimise()
+    printer = MachinePrinter.MachinePrinter()
+    printer.print_machine("ZSUT " + str(uuid.uuid4()), test_mealy_2)
+    test_mealy_2.print_machine_transitions()
+
+    exit()
+
+
+
     return True
 
 if __name__ == '__main__':
