@@ -205,12 +205,16 @@ def machines_equivalent(Mealy1, Mealy2):
     # Offset one of the machines IDs
     for state in test_mealy.states:
         state.id += state_offset
+    # Add all the states to one of the machines
     for state in test_mealy.states:
         test_mealy_2.states.append(state)
+    # Create a new initial state
     tempstate = State(len(test_mealy_2.states),False,True)
+    # All necessary transitions
     tempstate.add_transition(machine_1_start,Mealy1.alphabet.symbols[0],Mealy1.outputs.outputs[0],False)
     tempstate.add_transition(machine_2_start, Mealy1.alphabet.symbols[1], Mealy1.outputs.outputs[1], False)
     tempstate.add_transition(tempstate, Mealy1.alphabet.symbols[2], Mealy1.outputs.outputs[2], True)
+    # Make the old start states normal states
     machine_1_start.is_start = False
     machine_2_start.is_start = False
     test_mealy_2.states.append(tempstate)
