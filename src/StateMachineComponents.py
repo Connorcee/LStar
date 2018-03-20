@@ -1,5 +1,8 @@
 from random import *
+import sys
 import LStar as tools
+from operator import itemgetter
+import itertools
 import ast
 import os
 import uuid
@@ -7,7 +10,7 @@ from time import sleep
 
 class MealyMachine(object):
     def __init__(self, number_of_nodes, alphabet, outputs, path=False, randomise=False, from_table=False, transitions=None):
-
+        sys.setrecursionlimit(1500)
         self.number_of_nodes = number_of_nodes
         self.alphabet = Alphabet(alphabet)
         self.outputs = Outputs(outputs)
@@ -66,7 +69,10 @@ class MealyMachine(object):
         # All states present, contain no transitions
         if path:
             dir_path = os.path.dirname(os.path.realpath(__file__))
-            dir_path = dir_path + '\\State\\{}\\'.format(self.number_of_nodes)
+            if sys.platform == "win32":
+                dir_path = dir_path + '\\State\\{}\\'.format(self.number_of_nodes)
+            else:
+                dir_path = dir_path + '/State/{}/'.format(self.number_of_nodes)
             file_object = open(dir_path + path,"r")
         else:
             print "PATH IS FALSE"
@@ -91,11 +97,14 @@ class MealyMachine(object):
         else:
             name = path
         f=open(name,"w+")
+        print self.states
         for s in self.states:
             for t in s.Transitions:
                 if s.is_start:
+                    print '{} {} {} {} S\n'.format(t.state_1.id,t.state_2.id,t.symbol,t.output)
                     f.write('{} {} {} {} S\n'.format(t.state_1.id,t.state_2.id,t.symbol,t.output))
                 else:
+                    print '{} {} {} {} N\n'.format(t.state_1.id, t.state_2.id, t.symbol, t.output)
                     f.write('{} {} {} {} N\n'.format(t.state_1.id, t.state_2.id, t.symbol, t.output))
         f.close()
 
@@ -122,7 +131,6 @@ class MealyMachine(object):
         if not start:
             # List is empty, merge into any state
             start = state_list.pop()
-        print start
 
         for elem in state_list:
             for s in self.states:
@@ -138,7 +146,6 @@ class MealyMachine(object):
         inputs = self.alphabet.symbols[:]
         # Table to perform the reduction
         table = []
-        mapped_table = []
         # Get outputs and next states for each state
         for s in states:
             next_state_list = []
@@ -167,12 +174,12 @@ class MealyMachine(object):
                 temp.append(item[3])
             line.append(temp)
         table.sort(key=lambda x: x[3])
+        for line in table:
+            print line
         table = self.regenerate_table(table)
         combine_mapping = {}
         for line in table:
             combine_mapping[line[0]] = line[3]
-        for i in combine_mapping:
-            print i, combine_mapping[i]
         rev_multidict = {}
         for key, value in combine_mapping.items():
             rev_multidict.setdefault(value, set()).add(key)
@@ -184,7 +191,63 @@ class MealyMachine(object):
             equiv_states[index] = list(ele)
         return equiv_states
 
+    def duplicate_keys(self, dic):
+        rev_multidict = {}
+        for key, value in dic.items():
+            rev_multidict.setdefault(value, set()).add(key)
+        x = [values for key, values in rev_multidict.items() if len(values) > 1]
+        for index, ele in enumerate(x):
+            x[index] = list(ele)
+        return x
+
     def regenerate_table(self, table):
+        groupings = self.get_groupings(table)
+        print groupings
+        consistent = self.check_consistent_groupings(groupings,table)
+        print consistent
+        exit()
+        if consistent is not True:
+            pass
+
+        # Get the next number if we need to assign a new group
+        # group_id_increment = max(groups, key=groups.get) + 1
+        # print list_groups
+        exit()
+
+    def get_groupings(self,table):
+        groups = {}
+        for line in table:
+            groups[line[0]] = line[3]
+        list_group_id = self.duplicate_keys(groups)
+        if not list_group_id:
+            return table
+        list_groups = []
+        for group in list_group_id:
+            group_id = groups[group[0]]
+            items = [x for x in table if x[3] == group_id]
+            list_groups.append(items)
+        return list_groups
+
+    def check_consistent_groupings(self,groupings, table):
+        for groups in groupings:
+            lst = [x[4] for x in groups]
+            strlst = [str(x[4]) for x in groups]
+            print lst
+            if len(set(strlst)) != 1:
+                print "Mismatches present"
+                temp = [x for x in groups if x[4] in lst]
+            print temp
+
+    def regenerate_groupings(self,table, list_of_states, shift):
+        for line in table:
+            if line[0] in list_of_states:
+                line[3] = shift
+                shift += 1
+                list_of_states.remove(line[0])
+        for line in table:
+            print line
+
+    def regenerate_table_2(self, table):
         perms = []
         old_table = table[:]
         for line in table:
@@ -192,6 +255,7 @@ class MealyMachine(object):
                 pass
             else:
                 perms.append(line[4])
+        print perms
         for index, line in enumerate(perms):
             perms[index] = str(line)
         perms = {k: v for v, k in enumerate(perms)}
@@ -205,7 +269,11 @@ class MealyMachine(object):
             table[index][4] = temp
         table.sort(key=lambda x: x[3])
         contd = self.equal_tables(table, old_table)
+        print "-----------------"
+        for line in table:
+            print line
         if not contd:
+            exit()
             table = self.regenerate_table(table)
         return table
 
@@ -214,59 +282,6 @@ class MealyMachine(object):
             if line1 != line2:
                 return False
         return True
-
-    def equivalent_states(self):
-        states = self.states[:]
-        inputs = self.alphabet.symbols[:]
-        outputs = {}
-        next_states = {}
-        state_output = {}
-        for s in states:
-            x = []
-            y = []
-            z = []
-            for i in inputs:
-                x.append(self.transition_output(s, i))
-                y.append(self.next_state(s,i).id)
-                z.extend(x)
-                z.extend(y)
-            outputs[s.id] = str(x)
-            next_states[s.id] = str(y)
-            state_output[s.id] = str(z)
-
-        rev_multidict = {}
-        for key, value in state_output.items():
-            rev_multidict.setdefault(value, set()).add(key)
-        parition = [values for key, values in rev_multidict.items() if len(values) > 1]
-        if len(parition) > 0:
-            return list(parition[0])
-
-        rev_multidict = {}
-        for key, value in outputs.items():
-            rev_multidict.setdefault(value, set()).add(key)
-        parition = [values for key, values in rev_multidict.items() if len(values) > 1]
-
-        while True:
-            states_to_remove_from_set = []
-            for items in parition:
-                for elements in items:
-                    next_state = next_states[elements]
-                    next_state = ast.literal_eval(next_state)
-                    for ns in next_state:
-                        if ns not in items:
-                            states_to_remove_from_set.append(elements)
-                            break
-            if len(states_to_remove_from_set) == 0:
-                break
-            for index, value in enumerate(parition):
-                for ele in states_to_remove_from_set:
-                    if ele in parition[index]:
-                        parition[index].discard(ele)
-
-        if len(parition) > 0:
-            temp = [list(x) for x in parition if len(x) > 1]
-            if temp:
-                return temp[0]
 
     def print_states(self):
         print "States: " + str(self.states)
@@ -379,8 +394,7 @@ class MealyMachine(object):
                 continue
             output = output.output
             output_list.append(output)
-        return output_list
-
+        return output_lis
 
 class State(object):
 

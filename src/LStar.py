@@ -5,7 +5,7 @@ from StateMachineComponents import *
 
 class ObservationTable(object):
 
-    def __init__(self, alphabet, mealy,logging=False):
+    def __init__(self, alphabet, mealy, logging=False):
         self.states = [[]]
         self.experiments = [[s] for s in alphabet.symbols]
         self.possible_states = [[s] for s in alphabet.symbols]
@@ -20,7 +20,7 @@ class ObservationTable(object):
         self.equivalent_states = []
 
     @staticmethod
-    def remove_a_from_b(a,b):
+    def remove_a_from_b(a, b):
         for x in b:
             if a.__contains__(x):
                 b.remove(x)
@@ -65,7 +65,7 @@ class ObservationTable(object):
                 transitions.append([str(state),
                                     str(self.next_state(state, symbols)),
                                     str(symbols),
-                                    str(self.table_output(state,[symbols]))])
+                                    str(self.table_output(state, [symbols]))])
         transitions = self.remove_dups(transitions)
         for index, value in enumerate(transitions):
             if value[1] in equivalent_dict:
@@ -213,7 +213,7 @@ class ObservationTable(object):
         self.possible_states = self.remove_dups(self.possible_states)
 
     # Output for all states listed in the observation table
-    def state_experiment_output(self,mealy):
+    def state_experiment_output(self, mealy):
         self.top_dict = {}
         self.bottom_dict = {}
         for state in self.states:
@@ -223,7 +223,7 @@ class ObservationTable(object):
 
         for state in self.possible_states:
             for exp in self.experiments:
-                self.results.append(self.output_from_state_concat(mealy,state,exp))
+                self.results.append(self.output_from_state_concat(mealy, state, exp))
                 self.bottom_dict[str(state) + ":" + str(exp)] = self.output_from_state_concat(mealy, state, exp)
 
     # returns the output for a line in the table for a given state row
@@ -236,7 +236,7 @@ class ObservationTable(object):
                 state_keys.append(x)
         outputs_for_line = []
         for x in state_keys:
-            outputs_for_line.append(str(x) + ":" +str(joint_dict[x]))
+            outputs_for_line.append(str(x) + ":" + str(joint_dict[x]))
 
         return outputs_for_line
 
@@ -320,7 +320,7 @@ class ObservationTable(object):
             print "TOTAL TO ADD: " + str(total_to_add)
         return total_to_add
 
-    def check_state_equivalence(self,state_1, state_2, symbol):
+    def check_state_equivalence(self, state_1, state_2, symbol):
         state1_line = self.get_line_from_table(state_1)
         state1_line.sort(key=lambda s: s.split(":")[1])
         state2_line = self.get_line_from_table(state_2)
@@ -332,7 +332,7 @@ class ObservationTable(object):
                 extended = symbol
                 experiment = out_1.split(":")[1]
                 experiment = ast.literal_eval(experiment)
-                experiment.insert(0,extended)
+                experiment.insert(0, extended)
                 experiment_to_add.append(experiment)
 
         return experiment_to_add
