@@ -109,12 +109,13 @@ class MealyMachine(object):
         f.close()
 
     def minimise(self):
-        equiv = self.equivalent_states_2()
+        minimizer = Minimizer(self)
+        exit()
+        equiv = []
         if equiv is None:
             return None
         for item in equiv:
             self.combine_states(item)
-
 
     def combine_states(self, list_of_states):
         if list_of_states is None:
@@ -140,57 +141,6 @@ class MealyMachine(object):
             self.states.remove(elem)
         self.statesDict = self.build_state_dictionary()
 
-    def equivalent_states_2(self):
-        # Memory copy of states and inputs
-        states = self.states[:]
-        inputs = self.alphabet.symbols[:]
-        # Table to perform the reduction
-        table = []
-        # Get outputs and next states for each state
-        for s in states:
-            next_state_list = []
-            output_list = []
-            for i in inputs:
-                output_list.append(self.transition_output(s,i))
-                next_state_list.append(self.next_state(s,i).id)
-            row = [s.id,next_state_list,str(output_list)]
-            table.append(row)
-        perms = []
-        # Create the list of different output perms
-        for line in table:
-            if perms.__contains__(line[2]):
-                pass
-            else:
-                perms.append(line[2])
-        # make perms a dictionary, mapping each element to a number
-        perms = {k: v for v, k in enumerate(perms)}
-        # Add mappings to table
-        for line in table:
-            line.append(perms[line[2]])
-        for line in table:
-            temp = []
-            for ele in line[1]:
-                item = next(x for x in table if x[0] == ele)
-                temp.append(item[3])
-            line.append(temp)
-        table.sort(key=lambda x: x[3])
-        for line in table:
-            print line
-        table = self.regenerate_table(table)
-        combine_mapping = {}
-        for line in table:
-            combine_mapping[line[0]] = line[3]
-        rev_multidict = {}
-        for key, value in combine_mapping.items():
-            rev_multidict.setdefault(value, set()).add(key)
-        equiv_states = [values for key, values in rev_multidict.items() if len(values) > 1]
-        # No states to combine
-        if len(equiv_states) < 1:
-            return None
-        for index, ele in enumerate(equiv_states):
-            equiv_states[index] = list(ele)
-        return equiv_states
-
     def duplicate_keys(self, dic):
         rev_multidict = {}
         for key, value in dic.items():
@@ -199,89 +149,6 @@ class MealyMachine(object):
         for index, ele in enumerate(x):
             x[index] = list(ele)
         return x
-
-    def regenerate_table(self, table):
-        groupings = self.get_groupings(table)
-        print groupings
-        consistent = self.check_consistent_groupings(groupings,table)
-        print consistent
-        exit()
-        if consistent is not True:
-            pass
-
-        # Get the next number if we need to assign a new group
-        # group_id_increment = max(groups, key=groups.get) + 1
-        # print list_groups
-        exit()
-
-    def get_groupings(self,table):
-        groups = {}
-        for line in table:
-            groups[line[0]] = line[3]
-        list_group_id = self.duplicate_keys(groups)
-        if not list_group_id:
-            return table
-        list_groups = []
-        for group in list_group_id:
-            group_id = groups[group[0]]
-            items = [x for x in table if x[3] == group_id]
-            list_groups.append(items)
-        return list_groups
-
-    def check_consistent_groupings(self,groupings, table):
-        for groups in groupings:
-            lst = [x[4] for x in groups]
-            strlst = [str(x[4]) for x in groups]
-            print lst
-            if len(set(strlst)) != 1:
-                print "Mismatches present"
-                temp = [x for x in groups if x[4] in lst]
-            print temp
-
-    def regenerate_groupings(self,table, list_of_states, shift):
-        for line in table:
-            if line[0] in list_of_states:
-                line[3] = shift
-                shift += 1
-                list_of_states.remove(line[0])
-        for line in table:
-            print line
-
-    def regenerate_table_2(self, table):
-        perms = []
-        old_table = table[:]
-        for line in table:
-            if perms.__contains__(line[4]):
-                pass
-            else:
-                perms.append(line[4])
-        print perms
-        for index, line in enumerate(perms):
-            perms[index] = str(line)
-        perms = {k: v for v, k in enumerate(perms)}
-        for index, line in enumerate(table):
-            table[index][3] = perms[str(table[index][4])]
-        for index, line in enumerate(table):
-            temp = []
-            for ele in line[1]:
-                item = next(x for x in table if x[0] == ele)
-                temp.append(item[3])
-            table[index][4] = temp
-        table.sort(key=lambda x: x[3])
-        contd = self.equal_tables(table, old_table)
-        print "-----------------"
-        for line in table:
-            print line
-        if not contd:
-            exit()
-            table = self.regenerate_table(table)
-        return table
-
-    def equal_tables(self, table1, table2):
-        for line1, line2 in zip(table1, table2):
-            if line1 != line2:
-                return False
-        return True
 
     def print_states(self):
         print "States: " + str(self.states)
@@ -394,7 +261,7 @@ class MealyMachine(object):
                 continue
             output = output.output
             output_list.append(output)
-        return output_lis
+        return output_list
 
 class State(object):
 
@@ -482,6 +349,103 @@ class Transition(object):
 
     def get_end_state(self):
         return self.state_2
+
+class Minimizer(object):
+    def __init__(self, mealy_machine):
+        self.mealy_machine = mealy_machine
+        self.table = self.generate_initial_table()
+        self.table = self.Table(self.table, self.mealy_machine)
+
+    class Row:
+        def __init__(self, group, outputs, target_groups, state_id, target_states):
+            self.group = group
+            self.outputs = outputs
+            self.target_groups = target_groups
+            self.state_id = int(state_id)
+            self.target_states = target_states
+
+    class Table:
+        def __init__(self, table, mealy):
+            self.mealy = mealy
+            self.largest_group = self.largest_group_number(table)
+            self.original_table = table
+            self.id_to_group_mapping = self.build_id_to_group_mapping(table)
+            self.print_row_dict()
+            print self.states_in_same_group()
+
+        def build_id_to_group_mapping(self, table):
+            row_dict = {}
+            for row in table:
+                row_dict[str(row.state_id)] = row.group
+            return row_dict
+
+        def print_row_dict(self):
+            print self.id_to_group_mapping
+
+        def largest_group_number(self, table):
+            set_of_groups = set([])
+            for rows in table:
+                set_of_groups.add(rows.group)
+            return max(set_of_groups)
+
+        def new_group_id(self):
+            self.largest_group += 1
+            new_id = self.largest_group
+            return new_id
+
+        def groups(self):
+            return self.largest_group
+
+        def states_in_same_group(self):
+            return self.mealy.duplicate_keys(self.id_to_group_mapping)
+
+    # Create a table that shows the mealy machines grouped states and their outputs
+    # This is used to identify equivalent states
+    def generate_initial_table(self):
+        states = self.mealy_machine.states[:]
+        inputs = self.mealy_machine.alphabet.symbols[:]
+        # Table to perform the reduction
+        table = []
+        # Get outputs and next states for each state
+        for s in states:
+            next_state_list = []
+            output_list = []
+            for i in inputs:
+                output_list.append(self.mealy_machine.transition_output(s,i))
+                next_state_list.append(self.mealy_machine.next_state(s,i).id)
+            row = [s.id,next_state_list,str(output_list)]
+            table.append(row)
+        perms = []
+        # Create the list of different output perms
+        for line in table:
+            if perms.__contains__(line[2]):
+                pass
+            else:
+                perms.append(line[2])
+        # make perms a dictionary, mapping each element to a number
+        perms = {k: v for v, k in enumerate(perms)}
+        # Add mappings to table
+        for line in table:
+            line.append(perms[line[2]])
+        for line in table:
+            temp = []
+            for ele in line[1]:
+                item = next(x for x in table if x[0] == ele)
+                temp.append(item[3])
+            line.append(temp)
+        table.sort(key=lambda x: x[3])
+        for line in table:
+            print "Line " + str(line)
+
+        objected_table = []
+        for row in table:
+            state_id = row[0]
+            target_states = row[1]
+            outputs = row[2]
+            group = row[3]
+            target_groups = row[4]
+            objected_table.append(self.Row(group,outputs,target_groups,state_id,target_states))
+        return objected_table
 
 
 # Alphabet of the Mealy machine

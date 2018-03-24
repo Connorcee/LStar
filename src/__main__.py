@@ -11,7 +11,7 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
-    states = 5
+    states = 6
     for machines in machines_from_folder(states):
         iterate(states,2,False,"w",machines)
 
@@ -35,8 +35,12 @@ def generate_machine(nostates):
 
 def machines_from_folder(no_states):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    print dir_path
-    path = dir_path + "/State/{}".format(no_states)
+    print "Loading: " + str(dir_path)
+    if platform != "win32":
+        path = dir_path + "/State/{}".format(no_states)
+    else:
+        path = dir_path + "\\State\\{}".format(no_states)
+        print path
     dirls = os.listdir(path)
     return dirls
 
