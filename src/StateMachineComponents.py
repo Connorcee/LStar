@@ -6,7 +6,6 @@ import itertools
 import ast
 import os
 import uuid
-from time import sleep
 
 class MealyMachine(object):
     def __init__(self, number_of_nodes, alphabet, outputs, path=False, randomise=False, from_table=False, transitions=None):
@@ -108,14 +107,10 @@ class MealyMachine(object):
                     f.write('{} {} {} {} N\n'.format(t.state_1.id, t.state_2.id, t.symbol, t.output))
         f.close()
 
-    def minimise(self):
-        minimizer = Minimizer(self)
-        exit()
-        equiv = []
-        if equiv is None:
-            return None
-        for item in equiv:
-            self.combine_states(item)
+    @staticmethod
+    def minimise(mealy, logging):
+        minimizer = Minimizer(mealy, logging)
+        return minimizer.minimize()
 
     def combine_states(self, list_of_states):
         if list_of_states is None:
@@ -276,6 +271,7 @@ class State(object):
     def add_transition(self, state, symbol, output, is_loopback=False):
         self.Transitions.append(Transition(self, state, symbol, output, is_loopback))
         self.degree = len(self.Transitions)
+        self.Transitions.sort(key=lambda x: x.symbol)
 
     def print_transitions(self):
         print "Transitions for State:" + str(self.id) + " " + str(self.Transitions)
@@ -297,6 +293,8 @@ class State(object):
 
     def get_transition_outputs(self):
         outputs = []
+        trans = self.Transitions[:]
+        trans.sort(key=lambda x: x.symbol)
         for x in self.Transitions:
             outputs.append(x.output)
         return outputs
@@ -350,102 +348,121 @@ class Transition(object):
     def get_end_state(self):
         return self.state_2
 
+
 class Minimizer(object):
-    def __init__(self, mealy_machine):
+    def __init__(self, mealy_machine, logging=False):
+        self.logging = logging
+        self.empty = "empty"
+        self.equivalent = "EQUIVALENT"
+        self.cross = "X"
         self.mealy_machine = mealy_machine
-        self.table = self.generate_initial_table()
-        self.table = self.Table(self.table, self.mealy_machine)
+        self.implication_table = self.generate_empty_table(len(mealy_machine.states))
+        self.generate_implication_table()
+        while self.reverse_pass():
+            self.reverse_pass()
+        self.remove_unequivalent()
 
-    class Row:
-        def __init__(self, group, outputs, target_groups, state_id, target_states):
-            self.group = group
-            self.outputs = outputs
-            self.target_groups = target_groups
-            self.state_id = int(state_id)
-            self.target_states = target_states
+    class TableRow(object):
+        def __init__(self, state):
+            self.state = state
+            self.next_states = {}
+            self.outputs = {}
 
-    class Table:
-        def __init__(self, table, mealy):
-            self.mealy = mealy
-            self.largest_group = self.largest_group_number(table)
-            self.original_table = table
-            self.id_to_group_mapping = self.build_id_to_group_mapping(table)
-            self.print_row_dict()
-            print self.states_in_same_group()
+        def add_next_state(self, symbol, state):
+            self.next_states[symbol] = state
 
-        def build_id_to_group_mapping(self, table):
-            row_dict = {}
-            for row in table:
-                row_dict[str(row.state_id)] = row.group
-            return row_dict
+        def add_output(self,symbol, state):
+            self.outputs[symbol] = state
 
-        def print_row_dict(self):
-            print self.id_to_group_mapping
+        def __repr__(self):
+            return "State: " + str(self.state) + " Next States: " \
+                   + str(self.next_states) \
+                   + " Outputs: " \
+                   + str(self.outputs)
 
-        def largest_group_number(self, table):
-            set_of_groups = set([])
-            for rows in table:
-                set_of_groups.add(rows.group)
-            return max(set_of_groups)
+    def minimize(self):
+        # Take first tuple and combine the two states, then replace ach occurence of the first element in the list
+        # with the second, then remove the tuple
+        # Convert list of tuples to list of lists
+        states = [list(x) for x in self.implication_table.keys()]
+        while len(states) != 0:
+            active = states.pop()
+            state_0 = active[0]
+            state_1 = active[1]
+            if state_1 == state_0:
+                continue
+            self.mealy_machine.combine_states(active)
+            states = self.replace_elements(states, state_0, state_1)
+        return self.mealy_machine
 
-        def new_group_id(self):
-            self.largest_group += 1
-            new_id = self.largest_group
-            return new_id
+    def replace_elements(self, states, element_to_remove, element_to_replace):
+        for ind, val in enumerate(states):
+            for index, ele in enumerate(val):
+                if states[ind][index] == element_to_remove:
+                    states[ind][index] = element_to_replace
+        return states
 
-        def groups(self):
-            return self.largest_group
+    def remove_unequivalent(self):
+        self.implication_table = {k:v for k,v in self.implication_table.items() if v != "X"}
 
-        def states_in_same_group(self):
-            return self.mealy.duplicate_keys(self.id_to_group_mapping)
-
-    # Create a table that shows the mealy machines grouped states and their outputs
-    # This is used to identify equivalent states
-    def generate_initial_table(self):
-        states = self.mealy_machine.states[:]
-        inputs = self.mealy_machine.alphabet.symbols[:]
-        # Table to perform the reduction
-        table = []
-        # Get outputs and next states for each state
-        for s in states:
-            next_state_list = []
-            output_list = []
-            for i in inputs:
-                output_list.append(self.mealy_machine.transition_output(s,i))
-                next_state_list.append(self.mealy_machine.next_state(s,i).id)
-            row = [s.id,next_state_list,str(output_list)]
-            table.append(row)
-        perms = []
-        # Create the list of different output perms
-        for line in table:
-            if perms.__contains__(line[2]):
-                pass
+    # Iterate through the table removing anything associated with unequivalence
+    def reverse_pass(self):
+        change = False
+        for key in self.implication_table.keys():
+            if self.implication_table[key] == self.cross:
+                for key_0, value in self.implication_table.iteritems():
+                    if isinstance(self.implication_table[key_0],(list,)):
+                        if key in value:
+                            change = True
+                            self.implication_table[key_0] = self.cross
             else:
-                perms.append(line[2])
-        # make perms a dictionary, mapping each element to a number
-        perms = {k: v for v, k in enumerate(perms)}
-        # Add mappings to table
-        for line in table:
-            line.append(perms[line[2]])
-        for line in table:
-            temp = []
-            for ele in line[1]:
-                item = next(x for x in table if x[0] == ele)
-                temp.append(item[3])
-            line.append(temp)
-        table.sort(key=lambda x: x[3])
-        for line in table:
-            print "Line " + str(line)
+                continue
+        return change
 
-        objected_table = []
-        for row in table:
-            state_id = row[0]
-            target_states = row[1]
-            outputs = row[2]
-            group = row[3]
-            target_groups = row[4]
-            objected_table.append(self.Row(group,outputs,target_groups,state_id,target_states))
-        return objected_table
+    def generate_implication_table(self):
+        ns = self.mealy_machine.next_state
+        for key, value in self.implication_table.iteritems():
+            state_1 = self.mealy_machine.statesDict[key[0]]
+            state_2 = self.mealy_machine.statesDict[key[1]]
+            # If they have the same outputs
+            if self.output_check(state_1, state_2):
+                # Create implied pairs
+                pairs = []
+                for symbols in self.mealy_machine.alphabet.symbols:
+                    tup = (ns(state_1,symbols).id,ns(state_2,symbols).id)
+                    if tup[0] != tup[1] and set(tup) != set(key):
+                        tup = list(tup)
+                        tup.sort()
+                        tup = tuple(tup)
+                        pairs.append(tup)
+                if not pairs:
+                    pairs = self.equivalent
+                self.implication_table[key] = pairs
+            else:
+                # states are not equivalent
+                self.implication_table[key] = self.cross
+
+    def print_implication_table(self):
+        for key,value in self.implication_table.iteritems():
+            print str(key) + " - " + str(value)
+
+    def generate_empty_table(self, no_states):
+        columns = range(0,no_states - 1)
+        rows = list(reversed(range(1,no_states)))
+        table_dict = {}
+        for column in columns:
+            for row in rows:
+                if column == row:
+                    break
+                key = (column,row)
+                table_dict[key] = self.empty
+        return table_dict
+
+    @staticmethod
+    def output_check(state1, state2):
+        s1_o = state1.get_transition_outputs()
+        s2_o = state2.get_transition_outputs()
+        return s1_o == s2_o
 
 
 # Alphabet of the Mealy machine

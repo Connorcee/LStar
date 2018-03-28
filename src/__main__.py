@@ -11,9 +11,16 @@ from src.LStar import ObservationTable
 
 
 def main(args=None):
-    states = 6
-    for machines in machines_from_folder(states):
-        iterate(states,2,False,"w",machines)
+    iter = 32
+    for x in range(10,iter):
+        states = x
+        folder = machines_from_folder(states)
+        for machines in folder:
+            print str(machines)
+            try:
+                iterate(states,1,False,"w",machines)
+            except:
+                continue
 
 
 # Generate a machine and save it into the according folder for the path
@@ -58,29 +65,29 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
     print '------------------------------------------\n'
     print 'Generating Machine'
     # Create a state machine with the states and symbols and run the initial membership checks
-    Mealy = MealyMachine(states, symbols, outputs, path, randomise)
+    mealy_machine = MealyMachine(states, symbols, outputs, path, randomise)
     if randomise:
         for i in symbols:
-            Mealy.random_transition_pass()
-        Mealy.build_loopbacks()
-    Mealy.minimise()
-    if len(Mealy.states) != no_states:
+            mealy_machine.random_transition_pass()
+        mealy_machine.build_loopbacks()
+    mealy_machine = mealy_machine.minimise(mealy_machine, True)
+    if len(mealy_machine.states) != no_states:
         print "MACHINE NOT MINIMAL, RETURNING"
         return None
 
     print 'Generation Complete'
     print 'Initializing Observation Table'
-    ot = ObservationTable(alphabet,Mealy,logging)
+    ot = ObservationTable(alphabet,mealy_machine,logging)
     print 'Observation Table Initialized to Mealy'
 
     # Inital run of L Start
-    run_l_star(ot, Mealy)
+    run_l_star(ot, mealy_machine)
     new_machine = ot.build_machine()
-    equivalent = machines_equivalent(Mealy, new_machine)
+    equivalent = machines_equivalent(mealy_machine, new_machine)
     if mode == 'random':
-        counterexample = random_machine_tests(Mealy, new_machine, assumed_states, symbols)
+        counterexample = random_machine_tests(mealy_machine, new_machine, assumed_states, symbols)
     elif mode == 'w':
-        counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
+        counterexample = run_w_test(ot, assumed_states - len(new_machine.states), mealy_machine, new_machine)
     else:
         print "NO TEST MODE SELECTED"
         exit()
@@ -89,50 +96,49 @@ def iterate(no_states, assumed, randomise, mode, path=False, print_machine=False
     EQ_counter = 0
     while counterexample is not None and not equivalent:
         ot.add_state(counterexample)
-        ot.state_experiment_output(Mealy)
-        run_l_star(ot, Mealy)
+        ot.state_experiment_output(mealy_machine)
+        run_l_star(ot, mealy_machine)
         new_machine = ot.build_machine()
-        equivalent = machines_equivalent(Mealy,new_machine)
+        equivalent = machines_equivalent(mealy_machine,new_machine)
         if equivalent:
             break
         EQ_counter += 1
         if mode == 'random':
-            counterexample = random_machine_tests(Mealy, new_machine,assumed_states, symbols)
+            counterexample = random_machine_tests(mealy_machine, new_machine,assumed_states, symbols)
         elif mode == 'w':
-            counterexample = run_w_test(ot, assumed_states - len(new_machine.states), Mealy, new_machine)
+            counterexample = run_w_test(ot, assumed_states - len(new_machine.states), mealy_machine, new_machine)
 
     # No counterexample has been produced, clean up
     print "Equivalence Queries: " + str(EQ_counter)
     print "Membership Query Counter: " + str(ot.mq_counter)
-    print "Inferred: " + str(machines_equivalent(Mealy,new_machine))
-    if not machines_equivalent(Mealy,new_machine):
-        machine = machines_equivalent(Mealy, new_machine, True)
-        printer = MachinePrinter.MachinePrinter()
-        printer.print_machine("ZSUT " + str(uuid.uuid4()), Mealy)
-        printer.print_machine("ZInferred " + str(uuid.uuid4()), new_machine)
-        printer.print_machine("ZCombined " + str(uuid.uuid4()), machine)
-        W = ot.distinguishing_elements()
-        SC = ot.state_cover()
-        set_const = [W,SC]
-        print "W" + str(W)
-        print "State Cover" + str(SC)
-        print "SET CONST" + str(set_const)
-        ot.print_table()
-        exit()
+    print "Inferred: " + str(machines_equivalent(mealy_machine,new_machine))
+    if not machines_equivalent(mealy_machine,new_machine):
+        pass
+        #machine = machines_equivalent(mealy_machine, new_machine, True)
+        #printer = MachinePrinter.MachinePrinter()
+        #printer.print_machine("ZSUT " + str(uuid.uuid4()), mealy_machine)
+        #printer.print_machine("ZInferred " + str(uuid.uuid4()), new_machine)
+        #printer.print_machine("ZCombined " + str(uuid.uuid4()), machine)
+        #W = ot.distinguishing_elements()
+        #SC = ot.state_cover()
+        #set_const = [W,SC]
+        #print "W" + str(W)
+        #print "State Cover" + str(SC)
+        #print "SET CONST" + str(set_const)
+        #ot.print_table()
+        #exit()
 
     if print_machine:
         printer = MachinePrinter.MachinePrinter()
-        printer.print_machine("ZSUT " + str(uuid.uuid4()),Mealy)
+        printer.print_machine("ZSUT " + str(uuid.uuid4()),mealy_machine)
         printer.print_machine("ZInferred " + str(uuid.uuid4()),new_machine)
     # open a file with the modes
     dir_path = os.path.dirname(os.path.realpath(__file__))
     dir_path = dir_path + "/State/QueryData"
-    m = open('{}/{}-{}-membership.txt'.format(dir_path,mode,states), "a+")
-    e = open('{}/{}-{}-equivalence.txt'.format(dir_path,mode,states), "a+")
-    m.write(str(states) + ' ' + str(ot.mq_counter) + ' ' + str(machines_equivalent(Mealy,new_machine)) + '\n')
-    e.write(str(EQ_counter)+ '\n')
+    m = open('{}/{}-{}-data.txt'.format(dir_path,mode,states), "a+")
+    m.write(str(states) + ',' + str(ot.mq_counter) + ',' + str(machines_equivalent(mealy_machine,new_machine)) + ',' +
+            str(EQ_counter) + '\n')
     m.close()
-    e.close()
     print '------------------------------------------\n'
 
 
@@ -249,7 +255,9 @@ def machines_equivalent(Mealy1, Mealy2, return_machine=False):
     test_mealy_2.statesDict = test_mealy_2.build_state_dictionary()
 
     # Minimise this machine
-    test_mealy_2.minimise()
+    tmp_mealy = deepcopy(test_mealy_2)
+    test_mealy_2 = MealyMachine.minimise(test_mealy_2, True)
+    print "NUMBER OF STATES IN TEST: " + str(len(test_mealy_2.states))
 
     target_states = len(Mealy1.states) + len(Mealy2.states) + 1
     uneven_states = len(Mealy1.states) + 1
@@ -257,10 +265,10 @@ def machines_equivalent(Mealy1, Mealy2, return_machine=False):
     if target_states != len(test_mealy_2.states):
         print "EQUIVALENT MACHINES"
         return True
-    elif uneven_states == len(test_mealy_2) and not return_machine:
+    elif uneven_states == len(test_mealy_2.states) and not return_machine:
         print "UNEVEN COMBINATION, EQUIVALENT STATES FOUND"
         return False
-    elif uneven_states == len(test_mealy_2) and return_machine:
+    elif uneven_states == len(test_mealy_2.states) and return_machine:
         print "UNEVEN COMBINATION, EQUIVALENT STATES FOUND"
         return test_mealy_2
     elif return_machine:
