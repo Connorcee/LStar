@@ -1,11 +1,7 @@
 from random import *
 import sys
-import LStar as tools
-from operator import itemgetter
-import itertools
-import ast
 import os
-import uuid
+import itertools
 
 class MealyMachine(object):
     def __init__(self, number_of_nodes, alphabet, outputs, path=False, randomise=False, from_table=False, transitions=None):
@@ -31,13 +27,19 @@ class MealyMachine(object):
             print "NO PATH PROVIDED, NO RANDOM ALLOWED, EXITING"
             exit()
 
+    @staticmethod
+    def remove_dups(_list):
+        _list.sort()
+        _list = list(_list for _list, _ in itertools.groupby(_list))
+        return _list
+
     # Build a machine from an observation table
     def build_machine_from_ot(self, transitions):
         states = []
         state_mapping = {}
         for transition in transitions:
             states.append(transition[0])
-        states = tools.ObservationTable.remove_dups(states)
+        states = self.remove_dups(states)
 
         counter = 0
         for state in states:
@@ -74,7 +76,7 @@ class MealyMachine(object):
                 dir_path = dir_path + '/State/{}/'.format(self.number_of_nodes)
             file_object = open(dir_path + path,"r")
         else:
-            print "PATH IS FALSE"
+            print "LOAD PATH IS INCORRECT"
             exit()
         machine = []
         for line in file_object:
@@ -100,10 +102,8 @@ class MealyMachine(object):
         for s in self.states:
             for t in s.Transitions:
                 if s.is_start:
-                    print '{} {} {} {} S\n'.format(t.state_1.id,t.state_2.id,t.symbol,t.output)
                     f.write('{} {} {} {} S\n'.format(t.state_1.id,t.state_2.id,t.symbol,t.output))
                 else:
-                    print '{} {} {} {} N\n'.format(t.state_1.id, t.state_2.id, t.symbol, t.output)
                     f.write('{} {} {} {} N\n'.format(t.state_1.id, t.state_2.id, t.symbol, t.output))
         f.close()
 
@@ -199,7 +199,6 @@ class MealyMachine(object):
             self.create_random_legal_transition(False)
 
     def build_loopbacks(self):
-        print "Building Loopbacks"
         for state in self.states:
             legal_outputs = list(set(self.outputs.outputs) - set(state.get_transition_outputs()))
             if len(legal_outputs) == 0:

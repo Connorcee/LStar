@@ -1,5 +1,6 @@
 import itertools
 import ast
+from StateMachineComponents import MealyMachine
 from StateMachineComponents import *
 
 
@@ -111,21 +112,6 @@ class ObservationTable(object):
         rows = [stripper(s) for s in rows]
         rows = self.remove_dups(rows)
         return rows
-
-    def create_state_connection_dictionary(self, state_output_perm):
-        counter = 0
-        state_output_mapping = {}
-        for state in state_output_perm:
-            state_output_mapping[counter] = state
-            counter += 1
-        return state_output_mapping
-
-    def prepare_table(self):
-        pass
-        headings = ["States"]
-        self.experiments.sort()
-        headings.extend(self.experiments[:])
-        print headings
 
     # Merges two dictionaries, x first and then y
     @staticmethod
